@@ -1,0 +1,31 @@
+type Point {
+    x = 0;
+    y = 0;
+
+    getX() => self.x;
+    getY() => self.y;
+
+    setX(x) => self.x := x;
+    setY(y) => self.y := y;
+}
+type Bird inherits Superman {
+    
+}
+
+type Plane inherits Bird{
+    
+}
+
+type Superman inherits Plane {
+    
+}
+
+function cot(x) => 1 / tan(x);
+function tan(x) => sin(x) / cos(x);
+
+let x = new Superman() in {
+    print(
+        if (x is Bird) "It's bird!"
+        elif (x is Plane) "It's a plane!"
+        else "No, it's Superman!"
+    ); print(tan(PI) ** 2 + cot(PI) ** 2); }
