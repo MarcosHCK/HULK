@@ -15,17 +15,4 @@
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-class AstNode:
-
-  def __init__ (self):
-
-    super ().__init__ ()
-    pass
-
-class ValueNode (AstNode):
-
-  def __init__ (self, value):
-
-    super ().__init__ ()
-
-    self.value = value
+from lexer.lexer import Token

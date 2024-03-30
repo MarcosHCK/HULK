@@ -15,7 +15,25 @@
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
 from lexer.lexer import Lexer, Token
+from parser.debug.print import PrintVisitor
+from parser.parser import Parser
+from typing import Iterable
 import argparse
+
+def ignore (source: Iterable[Token]):
+
+  lastline = 1
+  lastcolumn = 1
+
+  for token in source:
+
+    if (token.type != Token.IGNORE):
+
+      lastcolumn = token.column
+      lastline = token.line
+      yield token
+
+  yield Token (lastcolumn + 1, lastline, 'EOF', None)
 
 def program ():
 
@@ -29,11 +47,9 @@ def program ():
 
     with open (file, 'r') as stream:
 
-      for token in Lexer (stream.readlines ()):
+      lines = stream.readlines ()
+      tokens = ignore (Lexer (lines)) 
 
-        if (token.type != Token.IGNORE):
-
-          val = token.value.rjust (13, ' ')
-          print (f'{val} of {token.type}')
+      print (PrintVisitor ().visit (Parser (tokens)))
 
 program ()

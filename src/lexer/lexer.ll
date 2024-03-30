@@ -19,18 +19,17 @@ generator ('python')
 KEYWORD = 'as|base|break|elif|else|extends|for|function|if|in|inherits|is|let|new|protocol|return|self|type|while'
 
 ADDITIVE_OPERATOR = '[-+]'
-BITWISE_OPERATOR = '[&|]'
 COMPARISION_OPERATOR = '[<>]|(<=)|(>=)|(==)|(!=)'
 CONCAT_OPERATOR = '@@|@'
-LOGICAL_OPERATOR = '(&&)|(^^)|(\\|\\|)'
+LOGICAL_OPERATOR = '[&|!]'
 MULTIPLICATIVE_OPERATOR = '[*/%]'
 POWER_OPERATOR = '^'
-
-IDENTIFIER = '[a-zA-Z_][a-zA-Z_0-9]*'
 
 BOOLEAN_VALUE = 'false|true'
 NUMBER_VALUE = '[0-9]+(\\.[0-9]+)?'
 STRING_VALUE = '"(\\\\.|[^"])*"'
+
+IDENTIFIER = '[a-zA-Z_][a-zA-Z_0-9]*'
 
 ANNOTATE = ':'
 ASSIGN = '='

@@ -14,18 +14,15 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
+from parser.ast.base import AstNode
+from typing import Optional
 
-class AstNode:
+class Param (AstNode):
 
-  def __init__ (self):
-
-    super ().__init__ ()
-    pass
-
-class ValueNode (AstNode):
-
-  def __init__ (self, value):
+  def __init__ (self, name: str, annotation: Optional[str], isvector: Optional[bool]):
 
     super ().__init__ ()
 
-    self.value = value
+    self.annotation = annotation
+    self.isvector = isvector
+    self.name = name

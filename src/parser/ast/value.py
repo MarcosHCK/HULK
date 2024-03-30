@@ -14,18 +14,22 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
+from parser.ast.base import ValueNode
 
-class AstNode:
+class BooleanValue (ValueNode):
 
-  def __init__ (self):
+  def __init__ (self, value: str):
 
-    super ().__init__ ()
-    pass
+    super ().__init__ (value == 'true')
 
-class ValueNode (AstNode):
+class NumberValue (ValueNode):
 
-  def __init__ (self, value):
+  def __init__ (self, value: str):
 
-    super ().__init__ ()
+    super ().__init__ (float (value))
 
-    self.value = value
+class StringValue (ValueNode):
+
+  def __init__ (self, value: str):
+
+    super ().__init__ (value [1:-1])

@@ -14,18 +14,17 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
+from parser.ast.base import AstNode
+from parser.ast.block import Block
+from parser.ast.param import Param
+from typing import List
 
-class AstNode:
+class FunctionDecl (AstNode):
 
-  def __init__ (self):
-
-    super ().__init__ ()
-    pass
-
-class ValueNode (AstNode):
-
-  def __init__ (self, value):
+  def __init__ (self, name: str, arguments: List[Param], body: Block):
 
     super ().__init__ ()
 
-    self.value = value
+    self.arguments = arguments
+    self.body = body
+    self.name = name

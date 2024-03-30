@@ -1,0 +1,108 @@
+-- Copyright 2021-2025
+-- This file is part of HULK.
+--
+-- HULK is free software: you can redistribute it and/or modify
+-- it under the terms of the GNU General Public License as published by
+-- the Free Software Foundation, either version 3 of the License, or
+-- (at your option) any later version.
+--
+-- HULK is distributed in the hope that it will be useful,
+-- but WITHOUT ANY WARRANTY; without even the implied warranty of
+-- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-- GNU General Public License for more details.
+--
+-- You should have received a copy of the GNU General Public License
+-- along with HULK.  If not, see <http://www.gnu.org/licenses/>.
+--
+algorithm ('lr')
+generator ('python')
+
+prolog ('prolog.py')
+
+local function builder (funcname, ...)
+
+  local args = select ('#', ...) == 0 and '' or table.concat ({'', ...}, ',')
+  local line1 = ('from parser.builder import %s'):format (funcname)
+  local line2 = ('return %s (args%s)'):format (funcname, args)
+  return verbatim (line1, line2)
+end
+
+local function beginlist (a) return builder ('build_list_begin', tostring (a)) end
+local function nextlist (a, b) return builder ('build_list_next', tostring (a), tostring (b)) end
+local function pickarg (a) return builder ('build_pickarg', tostring (a)) end
+
+--
+-- Actual grammar
+--
+
+BOOLEAN_VALUE = token ()
+NUMBER_VALUE = token ()
+STRING_VALUE = token ()
+
+IDENTIFIER = token ()
+
+file = block
+
+block = keyed_block                                                               / builder ('build_block')
+block = single_block                                                              / builder ('build_block')
+
+inline_block = (literal '=>' + block)                                             / pickarg (1)
+
+keyed_block = ('{' + stmtlist + '}' + ';')                                        / pickarg (1)
+keyed_block = ('{' + stmtlist + '}')                                              / pickarg (1)
+single_block = stmt                                                               / beginlist (0)
+
+funcdecl = ('function' + IDENTIFIER + paramlist + inline_block)                   / builder ('build_function_decl')
+funcdecl = ('function' + IDENTIFIER + paramlist + keyed_block)                    / builder ('build_function_decl')
+
+paramlist = (param + ',' + paramlist)                                             / nextlist (0, 2)
+paramlist = param                                                                 / beginlist (0)
+
+param = (IDENTIFIER + ':' + IDENTIFIER + '[' + ']')                               / builder ('build_param', 'True', 'True')
+param = (IDENTIFIER + ':' + IDENTIFIER)                                           / builder ('build_param', 'True', 'False')
+param = IDENTIFIER                                                                / builder ('build_param', 'False')
+
+--
+-- Expressions
+--
+
+stmtlist = (stmt + stmtlist)                                                      / nextlist (0, 1)
+stmtlist = stmt                                                                   / beginlist (0)
+
+stmt = (expression + ';')                                                         / pickarg (0)
+
+expression = (literal '!' + expression)                                           / builder ('build_unary_operator')
+expression = disjuntive
+
+disjuntive = (disjuntive + '|' + conjuntive)                                      / builder ('build_binary_operator')
+disjuntive = conjuntive
+
+conjuntive = (conjuntive + '&' + boolean)                                         / builder ('build_binary_operator')
+conjuntive = boolean
+
+boolean = (boolean + (literal '<' * '>' * '<=' * '>=' * '==' * '!=') + concated)  / builder ('build_binary_operator')
+boolean = concated
+
+concated = (numeric + (literal '@' + '@@') + concated)                            / builder ('build_binary_operator')
+concated = numeric
+
+numeric = (numeric + (literal '+' * '-') + term)                                  / builder ('build_binary_operator')
+numeric = term
+
+term = (term + (literal '*' * '/' * '%') + factor)                                / builder ('build_binary_operator')
+term = factor
+
+factor = (power + (literal '^') + factor)                                         / builder ('build_binary_operator')
+factor = power
+
+power = BOOLEAN_VALUE                                                             / builder ('build_boolean_value')
+power = NUMBER_VALUE                                                              / builder ('build_number_value')
+power = STRING_VALUE                                                              / builder ('build_string_value')
+power = parenthized
+power = (IDENTIFIER + args)                                                       / builder ('build_invoke')
+
+arglist = (expression + ',' + arglist)                                            / beginlist (0, 2)
+arglist = expression                                                              / beginlist (0)
+args = ('(' + arglist + ')')                                                      / pickarg (1)
+
+parenthized = ('(' + expression + ')')                                            / pickarg (1)
