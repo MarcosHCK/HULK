@@ -17,9 +17,10 @@
 from parser.ast.block import Block
 from parser.ast.decl import FunctionDecl
 from parser.ast.invoke import Invoke
+from parser.ast.let import Let, LetParam
 from parser.ast.operator import BinaryOperator, UnaryOperator
 from parser.ast.param import Param
-from parser.ast.value import BooleanValue, NumberValue, StringValue
+from parser.ast.value import BooleanValue, NumberValue, StringValue, VariableValue
 from typing import Tuple
 
 def build_binary_operator (args: Tuple):
@@ -42,6 +43,14 @@ def build_invoke (args: Tuple):
 
   return Invoke (args [0], args [1])
 
+def build_let (args: Tuple):
+
+  return Let (args [3], args [1])
+
+def build_letparam (args: Tuple):
+
+  return LetParam (args [0], args [2])
+
 def build_list_begin (args: Tuple, index: int):
 
   return [ args [index] ]
@@ -62,7 +71,7 @@ def build_param (args: Tuple, annotated: bool, isvector: bool):
 
   if (not annotated):
 
-    return Param (args [0])
+    return Param (args [0], None, False)
   else:
 
     return Param (args [0], args [2], isvector)
@@ -78,3 +87,7 @@ def build_string_value (args: Tuple):
 def build_unary_operator (args: Tuple):
 
   return UnaryOperator (args [0], args [1])
+
+def build_var_value (args: Tuple):
+
+  return VariableValue (args [0])

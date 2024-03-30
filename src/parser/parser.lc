@@ -41,35 +41,75 @@ STRING_VALUE = token ()
 
 IDENTIFIER = token ()
 
-file = block
+--
+-- Global
+--
 
-block = keyed_block                                                               / builder ('build_block')
-block = single_block                                                              / builder ('build_block')
+file = global_block
+
+global_block = global_slotlist                                                    / builder ('build_block')
+
+global_slotlist = (global_slot + global_slotlist)                                 / nextlist (0, 1)
+global_slotlist = global_slot                                                     / beginlist (0)
+
+global_slot = single_block * funcdecl
+
+--
+-- Function declaration
+--
+
+funcdecl = ('function' + IDENTIFIER + params + inline_block)                      / builder ('build_function_decl')
+funcdecl = ('function' + IDENTIFIER + params + keyed_block)                       / builder ('build_function_decl')
 
 inline_block = (literal '=>' + block)                                             / pickarg (1)
 
-keyed_block = ('{' + stmtlist + '}' + ';')                                        / pickarg (1)
-keyed_block = ('{' + stmtlist + '}')                                              / pickarg (1)
-single_block = stmt                                                               / beginlist (0)
-
-funcdecl = ('function' + IDENTIFIER + paramlist + inline_block)                   / builder ('build_function_decl')
-funcdecl = ('function' + IDENTIFIER + paramlist + keyed_block)                    / builder ('build_function_decl')
+params = ('(' + paramlist + ')')                                                  / pickarg (1)
 
 paramlist = (param + ',' + paramlist)                                             / nextlist (0, 2)
 paramlist = param                                                                 / beginlist (0)
 
 param = (IDENTIFIER + ':' + IDENTIFIER + '[' + ']')                               / builder ('build_param', 'True', 'True')
 param = (IDENTIFIER + ':' + IDENTIFIER)                                           / builder ('build_param', 'True', 'False')
-param = IDENTIFIER                                                                / builder ('build_param', 'False')
+param = IDENTIFIER                                                                / builder ('build_param', 'False', 'False')
 
 --
--- Expressions
+-- Let
 --
+
+let = (literal 'let' + let_varlist + 'in' + let_block)                            / builder ('build_let')
+
+let_block = let_stmt                                                              / builder ('build_block')
+let_block = keyed_stmts                                                           / builder ('build_block')
+
+let_stmt = expression                                                             / beginlist (0)
+
+let_varlist = (let_var + ',' + let_varlist)                                       / nextlist (0, 2)
+let_varlist = let_var                                                             / beginlist (0)
+
+let_var = (param + '=' + expression)                                              / builder ('build_letparam')
+
+--
+-- Blocks
+--
+
+block = keyed_block
+block = single_block
+
+keyed_block = (keyed_stmts + ';')                                                 / builder ('build_block')
+keyed_block = keyed_stmts                                                         / builder ('build_block')
+single_block = single_stmt                                                        / builder ('build_block')
+
+keyed_stmts = ('{' + stmtlist + '}')                                              / pickarg (1)
+single_stmt = stmt                                                                / beginlist (0)
 
 stmtlist = (stmt + stmtlist)                                                      / nextlist (0, 1)
 stmtlist = stmt                                                                   / beginlist (0)
 
 stmt = (expression + ';')                                                         / pickarg (0)
+
+--
+-- Expressions
+--
 
 expression = (literal '!' + expression)                                           / builder ('build_unary_operator')
 expression = disjuntive
@@ -98,8 +138,11 @@ factor = power
 power = BOOLEAN_VALUE                                                             / builder ('build_boolean_value')
 power = NUMBER_VALUE                                                              / builder ('build_number_value')
 power = STRING_VALUE                                                              / builder ('build_string_value')
+power = IDENTIFIER                                                                / builder ('build_var_value')
 power = parenthized
 power = (IDENTIFIER + args)                                                       / builder ('build_invoke')
+
+power = let
 
 arglist = (expression + ',' + arglist)                                            / beginlist (0, 2)
 arglist = expression                                                              / beginlist (0)

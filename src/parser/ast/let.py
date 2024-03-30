@@ -14,28 +14,24 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
-from parser.ast.base import ValueNode
+from parser.ast.base import AstNode
+from parser.ast.param import Param
+from typing import List
 
-class BooleanValue (ValueNode):
+class LetParam (AstNode):
 
-  def __init__ (self, value: str):
+  def __init__ (self, param: Param, value: AstNode):
 
-    super ().__init__ (value == 'true')
+    super ().__init__ ()
 
-class NumberValue (ValueNode):
+    self.param = param
+    self.value = value
 
-  def __init__ (self, value: str):
+class Let (AstNode):
 
-    super ().__init__ (float (value))
+  def __init__ (self, body: List[AstNode], params: List[LetParam]):
 
-class StringValue (ValueNode):
+    super ().__init__ ()
 
-  def __init__ (self, value: str):
-
-    super ().__init__ (value [1:-1])
-
-class VariableValue (ValueNode):
-
-  def __init__ (self, value: str):
-
-    super ().__init__ (value)
+    self.body = body
+    self.params = params

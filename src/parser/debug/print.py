@@ -15,8 +15,11 @@
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
 from parser.ast.block import Block
+from parser.ast.decl import FunctionDecl
 from parser.ast.invoke import Invoke
+from parser.ast.let import Let, LetParam
 from parser.ast.operator import BinaryOperator, UnaryOperator
+from parser.ast.param import Param
 from parser.ast.value import ValueNode
 import utils.visitor as visitor
 
@@ -35,10 +38,21 @@ class PrintVisitor (object):
   @visitor.when (Block)
   def visit (self, node: Block, tabs = 0):
 
-    stmts = node.expressions
-    stmts = list (map (lambda a: self.visit (a), stmts))
+    stmts = node.stmts
+    stmts = list (map (lambda a: ('  ' * tabs) + self.visit (a, 1 + tabs) + ';', stmts))
 
     return '\n'.join (stmts)
+
+  @visitor.when (FunctionDecl)
+  def visit (self, node: FunctionDecl, tabs = 0):
+
+    args = node.arguments
+    args = list (map (lambda a: self.visit (a), args))
+
+    body = self.visit (node.body, 1 + tabs)
+    name = node.name
+
+    return f'function {name} ({", ".join (args)})' + '{\n' + body + '\n}'
 
   @visitor.when (Invoke)
   def visit (self, node: Invoke, tabs = 0):
@@ -47,6 +61,26 @@ class PrintVisitor (object):
     args = ', '.join (list (map (lambda a: self.visit (a), args)))
 
     return f'({node.funcname} ({args}))'
+
+  @visitor.when (Let)
+  def visit (self, node: Let, tabs = 0):
+
+    body = self.visit (node.body, 1 + tabs)
+
+    return f'let <params> in ' + '{\n' + body + '\n}'
+
+  @visitor.when (Param)
+  def visit (self, node: Param, tabs = 0):
+
+    if (not node.annotation):
+
+      return node.name
+    elif (not node.isvector):
+
+      return f'{node.name}: {node.annontation}'
+    else:
+
+      return f'{node.name}: {node.annontation}[]'
 
   @visitor.when (UnaryOperator)
   def visit (self, node: UnaryOperator, tabs = 0):

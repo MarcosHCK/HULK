@@ -19,7 +19,7 @@ from typing import Optional
 
 class Param (AstNode):
 
-  def __init__ (self, name: str, annotation: Optional[str], isvector: Optional[bool]):
+  def __init__ (self, name: str, annotation: bool, isvector: bool):
 
     super ().__init__ ()
 
