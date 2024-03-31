@@ -16,7 +16,7 @@
 #
 from parser.ast.block import Block
 from parser.ast.conditional import Conditional, ConditionalEntry
-from parser.ast.decl import FunctionDecl
+from parser.ast.decl import FunctionDecl, ProtocolDecl, TypeDecl
 from parser.ast.invoke import Invoke
 from parser.ast.let import Let
 from parser.ast.loops import While
@@ -71,9 +71,14 @@ def build_for (args: Tuple):
     ]))
   ]))
 
-def build_function_decl (args: Tuple):
+def build_function_decl (args: Tuple, virtual: bool):
 
-  return FunctionDecl (args [1], args [2], args [3])
+  if (virtual):
+
+    return FunctionDecl (args [0], args [1])
+  else:
+
+    return FunctionDecl (args [0], args [1], args [2])
 
 def build_invoke (args: Tuple):
 
@@ -86,6 +91,10 @@ def build_let (args: Tuple):
 def build_list_begin (args: Tuple, index: int):
 
   return [ args [index] ]
+
+def build_list_empty (args: Tuple):
+
+  return [ ]
 
 def build_list_join (args: Tuple, list1at: int, list2at: int):
 
@@ -120,9 +129,27 @@ def build_pickarg (args: Tuple, index: int):
 
   return args [index]
 
+def build_protocol_decl (args: Tuple, extends: bool):
+
+  if (not extends):
+
+    return ProtocolDecl (args [0], None, args [1])
+  else:
+
+    return ProtocolDecl (args [0], args [1], args [2])
+
 def build_string_value (args: Tuple):
 
   return StringValue (args [0])
+
+def build_type_decl (args: Tuple, inherits: bool):
+
+  if (not inherits):
+
+    return TypeDecl (args [0], None, args [1])
+  else:
+
+    return TypeDecl (args [0], args [1], args [2])
 
 def build_unary_operator (args: Tuple):
 

@@ -28,3 +28,23 @@ class FunctionDecl (AstNode):
     self.arguments = arguments
     self.body = body
     self.name = name
+
+class ProtocolDecl (AstNode):
+
+  def __init__ (self, name: str, parent: str, body: List[AstNode]):
+
+    super ().__init__ ()
+
+    self.body = body
+    self.name = name
+    self.parent = parent
+
+class TypeDecl (AstNode):
+
+  def __init__ (self, name: str, parent: str, body: List[AstNode]):
+
+    super ().__init__ ()
+
+    self.body = body
+    self.name = name
+    self.parent = parent

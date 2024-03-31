@@ -37,6 +37,7 @@ local function builder (funcname, ...)
 end
 
 local function beginlist (a) return builder ('build_list_begin', a) end
+local function emptylist () return builder ('build_list_empty') end
 local function joinlist (a, b) return builder ('build_list_join', a, b) end
 local function nextlist (a, b) return builder ('build_list_next', a, b) end
 local function pickarg (a) return builder ('build_pickarg', a) end
@@ -57,23 +58,27 @@ IDENTIFIER = token ()
 
 file = global_block
 
-global_block = global_slotlist                                                    / builder ('build_block')
+global_block = global_stmtlist                                                    / builder ('build_block')
 
-global_slotlist = (global_slot + global_slotlist)                                 / nextlist (0, 1)
-global_slotlist = global_slot                                                     / beginlist (0)
+global_stmtlist = (global_stmt + global_stmtlist)                                 / nextlist (0, 1)
+global_stmtlist = global_stmt                                                     / beginlist (0)
 
-global_slot = single_block * funcdecl
+global_stmt = funcdecl * protodecl * typedecl
+global_stmt = single_block
 
 --
 -- Function declaration
 --
 
-funcdecl = ('function' + IDENTIFIER + params + inline_block)                      / builder ('build_function_decl')
-funcdecl = ('function' + IDENTIFIER + params + keyed_block)                       / builder ('build_function_decl')
+funcdecl = (funcdecl_head + params + inline_block)                                / builder ('build_function_decl', false)
+funcdecl = (funcdecl_head + params + keyed_block)                                 / builder ('build_function_decl', false)
+
+funcdecl_head = (literal 'function' + IDENTIFIER)                                 / pickarg (1)
 
 inline_block = (literal '=>' + block)                                             / pickarg (1)
 
-params = ('(' + paramlist + ')')                                                  / pickarg (1)
+params = (literal '(' + paramlist + ')')                                          / pickarg (1)
+params = (literal '(' + ')')                                                      / emptylist ()
 
 paramlist = (param + ',' + paramlist)                                             / nextlist (0, 2)
 paramlist = param                                                                 / beginlist (0)
@@ -83,12 +88,71 @@ param = (IDENTIFIER + ':' + IDENTIFIER)                                         
 param = IDENTIFIER                                                                / builder ('build_param', false, false)
 
 --
+-- Protocols
+--
+
+protodecl = (protodecl_head + protodecl_block)                                    / builder ('build_protocol_decl', false)
+protodecl = (protodecl_head + protodecl_derv + protodecl_block)                   / builder ('build_protocol_decl', true)
+
+protodecl_head = (literal 'protocol' + IDENTIFIER)                                / pickarg (1)
+protodecl_derv = (literal 'extends' + IDENTIFIER)                                 / pickarg (1)
+
+protodecl_block = protodecl_stmts                                                 / builder ('build_block')
+
+protodecl_stmts = ('{' + protodecl_stmtlist + '}')                                / pickarg (1)
+
+protodecl_stmtlist = (protodecl_stmt + protodecl_stmtlist)                        / nextlist (0, 1)
+protodecl_stmtlist = protodecl_stmt                                               / beginlist (0)
+
+protodecl_stmt = (protodecl_attribute + ';')                                      / pickarg (0)
+protodecl_stmt = (protodecl_method + ';')                                         / pickarg (0)
+
+protodecl_method = (IDENTIFIER + protodecl_params)                                / builder ('build_function_decl', true)
+
+protodecl_attribute = protodecl_param
+
+protodecl_params = (literal '(' + protodecl_paramlist + ')')                      / pickarg (1)
+protodecl_params = (literal '(' + ')')                                            / emptylist ()
+
+protodecl_paramlist = (protodecl_param + ',' + protodecl_paramlist)               / nextlist (0, 2)
+protodecl_paramlist = protodecl_param                                             / beginlist (0)
+
+protodecl_param = (IDENTIFIER + ':' + IDENTIFIER + '[' + ']')                     / builder ('build_param', true, true)
+protodecl_param = (IDENTIFIER + ':' + IDENTIFIER)                                 / builder ('build_param', true, false)
+
+--
+-- Types
+--
+
+typedecl = (typedecl_head + typedecl_block)                                       / builder ('build_type_decl', false)
+typedecl = (typedecl_head + typedecl_derv + typedecl_block)                       / builder ('build_type_decl', true)
+
+typedecl_head = (literal 'type' + IDENTIFIER)                                     / pickarg (1)
+typedecl_derv = (literal 'inherits' + IDENTIFIER)                                 / pickarg (1)
+
+typedecl_block = typedecl_stmts                                                   / builder ('build_block')
+
+typedecl_stmts = ('{' + typedecl_stmtlist + '}')                                  / pickarg (1)
+
+typedecl_stmtlist = (typedecl_stmt + typedecl_stmtlist)                           / nextlist (0, 1)
+typedecl_stmtlist = typedecl_stmt                                                 / beginlist (0)
+
+typedecl_stmt = typedecl_attribute
+typedecl_stmt = typedecl_method
+
+typedecl_method = (IDENTIFIER + params + inline_block)                            / builder ('build_function_decl', false)
+typedecl_method = (IDENTIFIER + params + keyed_block)                             / builder ('build_function_decl', false)
+
+typedecl_attribute = (param + '=' + stmt)                                         / builder ('build_varparam')
+
+--
 -- Construct block
 --
 
-construct_block = construct_stmt                                                   / builder ('build_block')
-construct_block = keyed_stmts                                                      / builder ('build_block')
-construct_stmt = expression                                                        / beginlist (0)
+construct_block = keyed_stmts                                                     / builder ('build_block')
+construct_block = construct_stmt                                                  / builder ('build_block')
+
+construct_stmt = expression                                                       / beginlist (0)
 
 --
 -- Conditional
@@ -115,6 +179,17 @@ elif_head = (literal 'elif' + parenthized)                                      
 else_head = literal 'else'
 
 --
+-- Let
+--
+
+let = (literal 'let' + let_varlist + 'in' + construct_block)                      / builder ('build_let')
+
+let_varlist = (let_var + ',' + let_varlist)                                       / nextlist (0, 2)
+let_varlist = let_var                                                             / beginlist (0)
+
+let_var = (param + '=' + expression)                                              / builder ('build_varparam')
+
+--
 -- Loop (for)
 --
 
@@ -130,17 +205,6 @@ for_var = (param + 'in' + expression)                                           
 
 while_ = (while_head + construct_block)                                           / builder ('build_while')
 while_head = (literal 'while' + parenthized)                                      / pickarg (1)
-
---
--- Let
---
-
-let = (literal 'let' + let_varlist + 'in' + construct_block)                      / builder ('build_let')
-
-let_varlist = (let_var + ',' + let_varlist)                                       / nextlist (0, 2)
-let_varlist = let_var                                                             / beginlist (0)
-
-let_var = (param + '=' + expression)                                              / builder ('build_varparam')
 
 --
 -- Blocks
@@ -203,6 +267,8 @@ power = while_
 
 arglist = (expression + ',' + arglist)                                            / nextlist (0, 2)
 arglist = expression                                                              / beginlist (0)
-args = ('(' + arglist + ')')                                                      / pickarg (1)
+
+args = (literal '(' + arglist + ')')                                              / pickarg (1)
+args = (literal '(' + ')')                                                        / emptylist ()
 
 parenthized = ('(' + expression + ')')                                            / pickarg (1)

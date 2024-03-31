@@ -16,7 +16,7 @@
 #
 from parser.ast.block import Block
 from parser.ast.conditional import Conditional, ConditionalEntry
-from parser.ast.decl import FunctionDecl
+from parser.ast.decl import FunctionDecl, ProtocolDecl, TypeDecl
 from parser.ast.invoke import Invoke
 from parser.ast.let import Let
 from parser.ast.loops import While
@@ -116,10 +116,38 @@ class PrintVisitor (object):
       return node.name
     elif (not node.isvector):
 
-      return f'{node.name}: {node.annontation}'
+      return f'{node.name}: {node.annotation}'
     else:
 
       return f'{node.name}: {node.annontation}[]'
+
+  @visitor.when (ProtocolDecl)
+  def visit (self, node: ProtocolDecl, tabs = 0):
+
+    body = self.visit (node.body, 1 + tabs)
+    name = node.name
+    parent = node.parent
+
+    if (not parent):
+
+      return f'protocol {name}' + '{\n' + body + '\n}'
+    else:
+
+      return f'protocol {name} extends {parent}' + '{\n' + body + '\n}'
+
+  @visitor.when (TypeDecl)
+  def visit (self, node: TypeDecl, tabs = 0):
+
+    body = self.visit (node.body, 1 + tabs)
+    name = node.name
+    parent = node.parent
+
+    if (not parent):
+
+      return f'type {name}' + '{\n' + body + '\n}'
+    else:
+
+      return f'type {name} inherits {parent}' + '{\n' + body + '\n}'
 
   @visitor.when (UnaryOperator)
   def visit (self, node: UnaryOperator, tabs = 0):

@@ -16,7 +16,7 @@
 --
 generator ('python')
 
-KEYWORD = 'as|base|break|elif|else|extends|for|function|if|in|inherits|is|let|new|protocol|return|self|type|while'
+KEYWORD = 'as|break|elif|else|extends|for|function|if|in|inherits|is|let|new|protocol|type|while'
 
 ADDITIVE_OPERATOR = '[-+]'
 COMPARISION_OPERATOR = '[<>]|(<=)|(>=)|(==)|(!=)'
