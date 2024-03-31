@@ -115,6 +115,23 @@ elif_head = (literal 'elif' + parenthized)                                      
 else_head = literal 'else'
 
 --
+-- Loop (for)
+--
+
+for_ = (for_head + construct_block)                                               / builder ('build_for')
+
+for_head = (literal 'for' + for_param)                                            / pickarg (1)
+for_param = ('(' + for_var + ')')                                                 / pickarg (1)
+for_var = (param + 'in' + expression)                                             / builder ('build_varparam')
+
+--
+-- Loop (while)
+--
+
+while_ = (while_head + construct_block)                                           / builder ('build_while')
+while_head = (literal 'while' + parenthized)                                      / pickarg (1)
+
+--
 -- Let
 --
 
@@ -123,7 +140,7 @@ let = (literal 'let' + let_varlist + 'in' + construct_block)                    
 let_varlist = (let_var + ',' + let_varlist)                                       / nextlist (0, 2)
 let_varlist = let_var                                                             / beginlist (0)
 
-let_var = (param + '=' + expression)                                              / builder ('build_letparam')
+let_var = (param + '=' + expression)                                              / builder ('build_varparam')
 
 --
 -- Blocks
@@ -181,8 +198,10 @@ power = (IDENTIFIER + args)                                                     
 
 power = let
 power = if_
+power = for_
+power = while_
 
-arglist = (expression + ',' + arglist)                                            / beginlist (0, 2)
+arglist = (expression + ',' + arglist)                                            / nextlist (0, 2)
 arglist = expression                                                              / beginlist (0)
 args = ('(' + arglist + ')')                                                      / pickarg (1)
 

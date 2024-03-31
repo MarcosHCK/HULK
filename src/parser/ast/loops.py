@@ -15,14 +15,13 @@
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
 from parser.ast.base import AstNode
-from parser.ast.param import Param, VarParam
-from typing import List
+from parser.ast.block import Block
 
-class Let (AstNode):
+class While (AstNode):
 
-  def __init__ (self, params: List[VarParam], body: List[AstNode]):
+  def __init__ (self, condition: AstNode, body: Block):
 
     super ().__init__ ()
 
     self.body = body
-    self.params = params
+    self.condition = condition

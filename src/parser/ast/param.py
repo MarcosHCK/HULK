@@ -26,3 +26,12 @@ class Param (AstNode):
     self.annotation = annotation
     self.isvector = isvector
     self.name = name
+
+class VarParam (AstNode):
+
+  def __init__ (self, param: Param, value: AstNode):
+
+    super ().__init__ ()
+
+    self.param = param
+    self.value = value

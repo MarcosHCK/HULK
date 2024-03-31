@@ -18,9 +18,10 @@ from parser.ast.block import Block
 from parser.ast.conditional import Conditional, ConditionalEntry
 from parser.ast.decl import FunctionDecl
 from parser.ast.invoke import Invoke
-from parser.ast.let import Let, LetParam
+from parser.ast.let import Let
+from parser.ast.loops import While
 from parser.ast.operator import BinaryOperator, UnaryOperator
-from parser.ast.param import Param
+from parser.ast.param import Param, VarParam
 from parser.ast.value import ValueNode
 import utils.visitor as visitor
 
@@ -107,14 +108,6 @@ class PrintVisitor (object):
 
     return f'let {params} in ' + '{\n' + body + '\n}'
 
-  @visitor.when (LetParam)
-  def visit (self, node: LetParam, tabs = 0):
-
-    param = self.visit (node.param)
-    value = self.visit (node.value)
-
-    return f'{param} = {value}'
-
   @visitor.when (Param)
   def visit (self, node: Param, tabs = 0):
 
@@ -137,3 +130,19 @@ class PrintVisitor (object):
   def visit (self, node: ValueNode, tabs = 0):
 
     return str (node.value)
+
+  @visitor.when (VarParam)
+  def visit (self, node: VarParam, tabs = 0):
+
+    param = self.visit (node.param)
+    value = self.visit (node.value)
+
+    return f'{param} = {value}'
+
+  @visitor.when (While)
+  def visit (self, node: While, tabs = 0):
+
+    body = self.visit (node.body, 1 + tabs)
+    condition = self.visit (node.condition)
+
+    return f'while ({condition})' + '{\n' + body + '\n}'

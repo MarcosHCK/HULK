@@ -18,9 +18,10 @@ from parser.ast.block import Block
 from parser.ast.conditional import Conditional, ConditionalEntry
 from parser.ast.decl import FunctionDecl
 from parser.ast.invoke import Invoke
-from parser.ast.let import Let, LetParam
+from parser.ast.let import Let
+from parser.ast.loops import While
 from parser.ast.operator import BinaryOperator, UnaryOperator
-from parser.ast.param import Param
+from parser.ast.param import Param, VarParam
 from parser.ast.value import BooleanValue, NumberValue, StringValue, VariableValue
 from typing import Tuple
 
@@ -49,6 +50,27 @@ def build_conditional_entry (args: Tuple, else_: bool):
 
     return ConditionalEntry (args [0], args [1])
 
+def build_for (args: Tuple):
+
+  param = args [0]
+  block = args [1]
+
+  varname = param.param.name
+  vartype = param.param.annotation
+  isvector = param.param.isvector
+
+  iterparam = VarParam (Param ('iterable', None, False), param.value)
+  itercond = VariableValue ('iter')
+  varparam = VarParam (Param (varname, vartype, isvector), VariableValue ('iter'))
+
+  return Let ([iterparam], Block ([
+
+    While (itercond, Block ([
+
+      Let ([varparam], block)
+    ]))
+  ]))
+
 def build_function_decl (args: Tuple):
 
   return FunctionDecl (args [1], args [2], args [3])
@@ -59,11 +81,7 @@ def build_invoke (args: Tuple):
 
 def build_let (args: Tuple):
 
-  return Let (args [3], args [1])
-
-def build_letparam (args: Tuple):
-
-  return LetParam (args [0], args [2])
+  return Let (args [1], args [3])
 
 def build_list_begin (args: Tuple, index: int):
 
@@ -110,6 +128,14 @@ def build_unary_operator (args: Tuple):
 
   return UnaryOperator (args [0], args [1])
 
+def build_varparam (args: Tuple):
+
+  return VarParam (args [0], args [2])
+
 def build_var_value (args: Tuple):
 
   return VariableValue (args [0])
+
+def build_while (args: Tuple):
+
+  return While (args [0], args [1])
