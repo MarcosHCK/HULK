@@ -15,6 +15,7 @@
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
 from parser.ast.block import Block
+from parser.ast.conditional import Conditional, ConditionalEntry
 from parser.ast.decl import FunctionDecl
 from parser.ast.invoke import Invoke
 from parser.ast.let import Let, LetParam
@@ -35,6 +36,19 @@ def build_boolean_value (args: Tuple):
 
   return BooleanValue (args [0])
 
+def build_conditional (args: Tuple):
+
+  return Conditional (args [0])
+
+def build_conditional_entry (args: Tuple, else_: bool):
+
+  if (else_):
+
+    return ConditionalEntry (None, args [1])
+  else:
+
+    return ConditionalEntry (args [0], args [1])
+
 def build_function_decl (args: Tuple):
 
   return FunctionDecl (args [1], args [2], args [3])
@@ -54,6 +68,14 @@ def build_letparam (args: Tuple):
 def build_list_begin (args: Tuple, index: int):
 
   return [ args [index] ]
+
+def build_list_join (args: Tuple, list1at: int, list2at: int):
+
+  arglist = [ ]
+  arglist.extend (args [list1at])
+  arglist.extend (args [list2at])
+
+  return arglist
 
 def build_list_next (args: Tuple, elmat: int, listat: int):
 

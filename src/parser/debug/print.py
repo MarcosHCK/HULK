@@ -15,6 +15,7 @@
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
 from parser.ast.block import Block
+from parser.ast.conditional import Conditional, ConditionalEntry
 from parser.ast.decl import FunctionDecl
 from parser.ast.invoke import Invoke
 from parser.ast.let import Let, LetParam
@@ -43,6 +44,40 @@ class PrintVisitor (object):
 
     return '\n'.join (stmts)
 
+  @visitor.when (Conditional)
+  def visit (self, node: Conditional, tabs = 0):
+
+    entries = [ ]
+    first = True
+
+    for entry in node.entries:
+
+      if (not first):
+
+        entries.append (self.visit (entry, 0, False))
+      else:
+
+        first = False
+        entries.append (self.visit (entry, 0, True))
+
+    return '(' + '\n'.join (entries) + ')'
+
+  @visitor.when (ConditionalEntry)
+  def visit (self, node: ConditionalEntry, tabs = 0, first = False): 
+
+    if (not node.condition):
+
+      body = self.visit (node.body, 1 + tabs)
+
+      return 'else {\n' + body + '\n}'
+
+    else:
+
+      body = self.visit (node.body, 1 + tabs)
+      condition = self.visit (node.condition)
+
+      return f'{"if" if first else "elif"} ({condition})' + '{\n' + body + '\n}'
+
   @visitor.when (FunctionDecl)
   def visit (self, node: FunctionDecl, tabs = 0):
 
@@ -67,7 +102,18 @@ class PrintVisitor (object):
 
     body = self.visit (node.body, 1 + tabs)
 
-    return f'let <params> in ' + '{\n' + body + '\n}'
+    params = list (map (lambda a: self.visit (a), node.params))
+    params = ', '.join (params)
+
+    return f'let {params} in ' + '{\n' + body + '\n}'
+
+  @visitor.when (LetParam)
+  def visit (self, node: LetParam, tabs = 0):
+
+    param = self.visit (node.param)
+    value = self.visit (node.value)
+
+    return f'{param} = {value}'
 
   @visitor.when (Param)
   def visit (self, node: Param, tabs = 0):

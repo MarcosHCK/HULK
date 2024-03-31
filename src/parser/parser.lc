@@ -19,17 +19,27 @@ generator ('python')
 
 prolog ('prolog.py')
 
+local function pythonize (v)
+
+  if (type (v) == 'boolean') then return v == true and 'True' or 'False'
+  elseif (type (v) == 'table') then error ('untranslatable value')
+  else return tostring (v) end
+end
+
 local function builder (funcname, ...)
 
-  local args = select ('#', ...) == 0 and '' or table.concat ({'', ...}, ',')
+  local args = ''
+  for _, a in ipairs ({...}) do args = args .. ',' .. pythonize (a) end
+
   local line1 = ('from parser.builder import %s'):format (funcname)
   local line2 = ('return %s (args%s)'):format (funcname, args)
   return verbatim (line1, line2)
 end
 
-local function beginlist (a) return builder ('build_list_begin', tostring (a)) end
-local function nextlist (a, b) return builder ('build_list_next', tostring (a), tostring (b)) end
-local function pickarg (a) return builder ('build_pickarg', tostring (a)) end
+local function beginlist (a) return builder ('build_list_begin', a) end
+local function joinlist (a, b) return builder ('build_list_join', a, b) end
+local function nextlist (a, b) return builder ('build_list_next', a, b) end
+local function pickarg (a) return builder ('build_pickarg', a) end
 
 --
 -- Actual grammar
@@ -68,20 +78,47 @@ params = ('(' + paramlist + ')')                                                
 paramlist = (param + ',' + paramlist)                                             / nextlist (0, 2)
 paramlist = param                                                                 / beginlist (0)
 
-param = (IDENTIFIER + ':' + IDENTIFIER + '[' + ']')                               / builder ('build_param', 'True', 'True')
-param = (IDENTIFIER + ':' + IDENTIFIER)                                           / builder ('build_param', 'True', 'False')
-param = IDENTIFIER                                                                / builder ('build_param', 'False', 'False')
+param = (IDENTIFIER + ':' + IDENTIFIER + '[' + ']')                               / builder ('build_param', true, true)
+param = (IDENTIFIER + ':' + IDENTIFIER)                                           / builder ('build_param', true, false)
+param = IDENTIFIER                                                                / builder ('build_param', false, false)
+
+--
+-- Construct block
+--
+
+construct_block = construct_stmt                                                   / builder ('build_block')
+construct_block = keyed_stmts                                                      / builder ('build_block')
+construct_stmt = expression                                                        / beginlist (0)
+
+--
+-- Conditional
+--
+
+if_ = ifelse_list                                                                 / builder ('build_conditional')
+
+ifelse_list = (if_list + else_list)                                               / joinlist (0, 1)
+
+if_list = (if_stmt + elif_list)                                                   / nextlist (0, 1)
+if_list = if_stmt                                                                 / beginlist (0)
+
+elif_list = (elif_stmt + elif_list)                                               / nextlist (0, 1)
+elif_list = elif_stmt                                                             / beginlist (0)
+
+else_list = else_stmt                                                             / beginlist (0)
+
+if_stmt = (if_head + construct_block)                                             / builder ('build_conditional_entry', false)
+elif_stmt = (elif_head + construct_block)                                         / builder ('build_conditional_entry', false)
+else_stmt = (else_head + construct_block)                                         / builder ('build_conditional_entry', true)
+
+if_head = (literal 'if' + parenthized)                                            / pickarg (1)
+elif_head = (literal 'elif' + parenthized)                                        / pickarg (1)
+else_head = literal 'else'
 
 --
 -- Let
 --
 
-let = (literal 'let' + let_varlist + 'in' + let_block)                            / builder ('build_let')
-
-let_block = let_stmt                                                              / builder ('build_block')
-let_block = keyed_stmts                                                           / builder ('build_block')
-
-let_stmt = expression                                                             / beginlist (0)
+let = (literal 'let' + let_varlist + 'in' + construct_block)                      / builder ('build_let')
 
 let_varlist = (let_var + ',' + let_varlist)                                       / nextlist (0, 2)
 let_varlist = let_var                                                             / beginlist (0)
@@ -143,6 +180,7 @@ power = parenthized
 power = (IDENTIFIER + args)                                                       / builder ('build_invoke')
 
 power = let
+power = if_
 
 arglist = (expression + ',' + arglist)                                            / beginlist (0, 2)
 arglist = expression                                                              / beginlist (0)
