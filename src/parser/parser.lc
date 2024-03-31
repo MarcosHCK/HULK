@@ -70,10 +70,13 @@ global_stmt = single_block
 -- Function declaration
 --
 
-funcdecl = (funcdecl_head + params + inline_block)                                / builder ('build_function_decl', false)
-funcdecl = (funcdecl_head + params + keyed_block)                                 / builder ('build_function_decl', false)
+funcdecl = (funcdecl_head + params + funcdecl_tail + inline_block)                / builder ('build_function_decl', true, false)
+funcdecl = (funcdecl_head + params + funcdecl_tail + keyed_block)                 / builder ('build_function_decl', true, false)
+funcdecl = (funcdecl_head + params + inline_block)                                / builder ('build_function_decl', false, false)
+funcdecl = (funcdecl_head + params + keyed_block)                                 / builder ('build_function_decl', false, false)
 
 funcdecl_head = (literal 'function' + IDENTIFIER)                                 / pickarg (1)
+funcdecl_tail = (literal ':' + IDENTIFIER)                                        / pickarg (1)
 
 inline_block = (literal '=>' + block)                                             / pickarg (1)
 
@@ -91,15 +94,16 @@ param = IDENTIFIER                                                              
 -- Protocols
 --
 
-protodecl = (protodecl_head + protodecl_block)                                    / builder ('build_protocol_decl', false)
 protodecl = (protodecl_head + protodecl_derv + protodecl_block)                   / builder ('build_protocol_decl', true)
+protodecl = (protodecl_head + protodecl_block)                                    / builder ('build_protocol_decl', false)
 
 protodecl_head = (literal 'protocol' + IDENTIFIER)                                / pickarg (1)
 protodecl_derv = (literal 'extends' + IDENTIFIER)                                 / pickarg (1)
 
 protodecl_block = protodecl_stmts                                                 / builder ('build_block')
 
-protodecl_stmts = ('{' + protodecl_stmtlist + '}')                                / pickarg (1)
+protodecl_stmts = (literal '{' + protodecl_stmtlist + '}')                        / pickarg (1)
+protodecl_stmts = (literal '{' + '}')                                             / emptylist ()
 
 protodecl_stmtlist = (protodecl_stmt + protodecl_stmtlist)                        / nextlist (0, 1)
 protodecl_stmtlist = protodecl_stmt                                               / beginlist (0)
@@ -107,7 +111,9 @@ protodecl_stmtlist = protodecl_stmt                                             
 protodecl_stmt = (protodecl_attribute + ';')                                      / pickarg (0)
 protodecl_stmt = (protodecl_method + ';')                                         / pickarg (0)
 
-protodecl_method = (IDENTIFIER + protodecl_params)                                / builder ('build_function_decl', true)
+protodecl_method = (IDENTIFIER + protodecl_params + protodecl_annotation)         / builder ('build_function_decl', true, true)
+
+protodecl_annotation = (literal ':' + IDENTIFIER)                                 / pickarg (1)
 
 protodecl_attribute = protodecl_param
 
@@ -124,15 +130,16 @@ protodecl_param = (IDENTIFIER + ':' + IDENTIFIER)                               
 -- Types
 --
 
-typedecl = (typedecl_head + typedecl_block)                                       / builder ('build_type_decl', false)
 typedecl = (typedecl_head + typedecl_derv + typedecl_block)                       / builder ('build_type_decl', true)
+typedecl = (typedecl_head + typedecl_block)                                       / builder ('build_type_decl', false)
 
 typedecl_head = (literal 'type' + IDENTIFIER)                                     / pickarg (1)
 typedecl_derv = (literal 'inherits' + IDENTIFIER)                                 / pickarg (1)
 
 typedecl_block = typedecl_stmts                                                   / builder ('build_block')
 
-typedecl_stmts = ('{' + typedecl_stmtlist + '}')                                  / pickarg (1)
+typedecl_stmts = (literal '{' + typedecl_stmtlist + '}')                          / pickarg (1)
+typedecl_stmts = (literal '{' + '}')                                              / emptylist ()
 
 typedecl_stmtlist = (typedecl_stmt + typedecl_stmtlist)                           / nextlist (0, 1)
 typedecl_stmtlist = typedecl_stmt                                                 / beginlist (0)
@@ -140,8 +147,10 @@ typedecl_stmtlist = typedecl_stmt                                               
 typedecl_stmt = typedecl_attribute
 typedecl_stmt = typedecl_method
 
-typedecl_method = (IDENTIFIER + params + inline_block)                            / builder ('build_function_decl', false)
-typedecl_method = (IDENTIFIER + params + keyed_block)                             / builder ('build_function_decl', false)
+typedecl_method = (IDENTIFIER + params + funcdecl_tail + inline_block)            / builder ('build_function_decl', true, false)
+typedecl_method = (IDENTIFIER + params + funcdecl_tail + keyed_block)             / builder ('build_function_decl', true, false)
+typedecl_method = (IDENTIFIER + params + inline_block)                            / builder ('build_function_decl', false, false)
+typedecl_method = (IDENTIFIER + params + keyed_block)                             / builder ('build_function_decl', false, false)
 
 typedecl_attribute = (param + '=' + stmt)                                         / builder ('build_varparam')
 
@@ -170,13 +179,13 @@ elif_list = elif_stmt                                                           
 
 else_list = else_stmt                                                             / beginlist (0)
 
-if_stmt = (if_head + construct_block)                                             / builder ('build_conditional_entry', false)
-elif_stmt = (elif_head + construct_block)                                         / builder ('build_conditional_entry', false)
 else_stmt = (else_head + construct_block)                                         / builder ('build_conditional_entry', true)
+elif_stmt = (elif_head + construct_block)                                         / builder ('build_conditional_entry', false)
+if_stmt = (if_head + construct_block)                                             / builder ('build_conditional_entry', false)
 
-if_head = (literal 'if' + parenthized)                                            / pickarg (1)
-elif_head = (literal 'elif' + parenthized)                                        / pickarg (1)
 else_head = literal 'else'
+elif_head = (literal 'elif' + parenthized)                                        / pickarg (1)
+if_head = (literal 'if' + parenthized)                                            / pickarg (1)
 
 --
 -- Let
@@ -256,9 +265,9 @@ factor = power
 power = BOOLEAN_VALUE                                                             / builder ('build_boolean_value')
 power = NUMBER_VALUE                                                              / builder ('build_number_value')
 power = STRING_VALUE                                                              / builder ('build_string_value')
+power = (IDENTIFIER + args)                                                       / builder ('build_invoke')
 power = IDENTIFIER                                                                / builder ('build_var_value')
 power = parenthized
-power = (IDENTIFIER + args)                                                       / builder ('build_invoke')
 
 power = let
 power = if_

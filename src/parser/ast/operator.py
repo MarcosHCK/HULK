@@ -14,9 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
-from parser.ast.base import AstNode
+from parser.ast.base import Value
 
-class UnaryOperator (AstNode):
+class UnaryOperator (Value):
 
   def __init__ (self, operator, argument):
 
@@ -25,7 +25,7 @@ class UnaryOperator (AstNode):
     self.argument = argument
     self.operator = operator
 
-class BinaryOperator (AstNode):
+class BinaryOperator (Value):
 
   def __init__ (self, operator, argument, argument2):
 

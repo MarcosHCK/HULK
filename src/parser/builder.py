@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
+from parser.ast.base import BASE_TYPE
 from parser.ast.block import Block
 from parser.ast.conditional import Conditional, ConditionalEntry
 from parser.ast.decl import FunctionDecl, ProtocolDecl, TypeDecl
@@ -63,22 +64,17 @@ def build_for (args: Tuple):
   itercond = VariableValue ('iter')
   varparam = VarParam (Param (varname, vartype, isvector), VariableValue ('iter'))
 
-  return Let ([iterparam], Block ([
+  return Let ([iterparam], Block ([ While (itercond, Block ([ Let ([varparam], block) ])) ]))
 
-    While (itercond, Block ([
+def build_function_decl (args: Tuple, annotated: bool, virtual: bool):
 
-      Let ([varparam], block)
-    ]))
-  ]))
+  annotation = None if not annotated else args [2]
+  body = None if virtual else (args [3] if annotated else args [2])
 
-def build_function_decl (args: Tuple, virtual: bool):
+  name = args [0]
+  params = args [1]
 
-  if (virtual):
-
-    return FunctionDecl (args [0], args [1])
-  else:
-
-    return FunctionDecl (args [0], args [1], args [2])
+  return FunctionDecl (name, params, annotation, body)
 
 def build_invoke (args: Tuple):
 
@@ -146,7 +142,7 @@ def build_type_decl (args: Tuple, inherits: bool):
 
   if (not inherits):
 
-    return TypeDecl (args [0], None, args [1])
+    return TypeDecl (args [0], BASE_TYPE, args [1])
   else:
 
     return TypeDecl (args [0], args [1], args [2])

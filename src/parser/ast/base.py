@@ -14,6 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
+from typing import Any
+
+BASE_TYPE = 'Object'
 
 class AstNode:
 
@@ -22,9 +25,15 @@ class AstNode:
     super ().__init__ ()
     pass
 
-class ValueNode (AstNode):
+class Value (AstNode):
 
-  def __init__ (self, value):
+  def __init__ (self):
+
+    super ().__init__ ()
+
+class Constant (Value):
+
+  def __init__ (self, value: Any):
 
     super ().__init__ ()
 

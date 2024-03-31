@@ -21,10 +21,11 @@ from typing import List
 
 class FunctionDecl (AstNode):
 
-  def __init__ (self, name: str, arguments: List[Param], body: Block):
+  def __init__ (self, name: str, arguments: List[Param], annotation: AstNode, body: Block):
 
     super ().__init__ ()
 
+    self.annotation = annotation
     self.arguments = arguments
     self.body = body
     self.name = name

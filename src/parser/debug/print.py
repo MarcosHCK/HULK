@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
+from parser.ast.base import Constant
 from parser.ast.block import Block
 from parser.ast.conditional import Conditional, ConditionalEntry
 from parser.ast.decl import FunctionDecl, ProtocolDecl, TypeDecl
@@ -22,7 +23,6 @@ from parser.ast.let import Let
 from parser.ast.loops import While
 from parser.ast.operator import BinaryOperator, UnaryOperator
 from parser.ast.param import Param, VarParam
-from parser.ast.value import ValueNode
 import utils.visitor as visitor
 
 class PrintVisitor (object):
@@ -79,16 +79,27 @@ class PrintVisitor (object):
 
       return f'{"if" if first else "elif"} ({condition})' + '{\n' + body + '\n}'
 
+  @visitor.when (Constant)
+  def visit (self, node: Constant, tabs = 0):
+
+    return str (node.value)
+
   @visitor.when (FunctionDecl)
   def visit (self, node: FunctionDecl, tabs = 0):
 
-    args = node.arguments
-    args = list (map (lambda a: self.visit (a), args))
-
-    body = self.visit (node.body, 1 + tabs)
+    annotation = node.annotation
+    arguments = node.arguments
+    arguments = list (map (lambda a: self.visit (a), arguments))
+    body = node.body
     name = node.name
 
-    return f'function {name} ({", ".join (args)})' + '{\n' + body + '\n}'
+    body = self.visit (body, 1 + tabs)
+
+    head = f'function {name} ({", ".join (arguments)})'
+    tail1 = '' if (not annotation) else f': {annotation}'
+    tail2 = '' if (not body) else ' {\n' + body + '\n}'
+
+    return f'{head}{tail1}{tail2}'
 
   @visitor.when (Invoke)
   def visit (self, node: Invoke, tabs = 0):
@@ -128,12 +139,11 @@ class PrintVisitor (object):
     name = node.name
     parent = node.parent
 
-    if (not parent):
+    head = f'protocol {name}'
+    tail1 = '' if (not parent) else f' extends {parent}'
+    tail2 = '' if (not body) else ' {\n' + body + '\n}'
 
-      return f'protocol {name}' + '{\n' + body + '\n}'
-    else:
-
-      return f'protocol {name} extends {parent}' + '{\n' + body + '\n}'
+    return f'{head}{tail1}{tail2}'
 
   @visitor.when (TypeDecl)
   def visit (self, node: TypeDecl, tabs = 0):
@@ -142,22 +152,16 @@ class PrintVisitor (object):
     name = node.name
     parent = node.parent
 
-    if (not parent):
+    head = f'type {name}'
+    tail1 = '' if (not parent) else f' inherits {parent}'
+    tail2 = '' if (not body) else ' {\n' + body + '\n}'
 
-      return f'type {name}' + '{\n' + body + '\n}'
-    else:
-
-      return f'type {name} inherits {parent}' + '{\n' + body + '\n}'
+    return f'{head}{tail1}{tail2}'
 
   @visitor.when (UnaryOperator)
   def visit (self, node: UnaryOperator, tabs = 0):
 
     return f'({node.operator} {self.visit (node.argument)})'
-
-  @visitor.when (ValueNode)
-  def visit (self, node: ValueNode, tabs = 0):
-
-    return str (node.value)
 
   @visitor.when (VarParam)
   def visit (self, node: VarParam, tabs = 0):

@@ -9,6 +9,8 @@ function marcos (a) => { print (3); };
 function marcos (a) => { 4; 5; };
 function marcos (a) => { 8; print (7); print (a); };
 function marcos (a, b) => a + b;
+function marcos (a): void => print (3);
+function marcos (a): void { print (3); }
 let a = 2 in { print (a); 7; } + 6;
 let a = 2 in let b = 3 in print (a + b);
 let a = 2 in sin (a) + let b = 3 in cos (b);
@@ -25,6 +27,10 @@ while (a == 6) while (b == 8) print (a + b);
 if (d == 5) while (t == 2) t + 2 else 4;
 for (x in range (3, 7)) print (x);
 
+type Base
+{
+}
+
 type Point
 {
   x: Number = 0;
@@ -37,8 +43,17 @@ type PolarPoint inherits Point
   rot (angle) => x + angle;
 }
 
+protocol Empty
+{
+}
+
 protocol Relatable
 {
   rel: Number;
-  zero ();
+  zero (): Bool;
+}
+
+protocol Pointable extends Relatable
+{
+  points (): Bool;
 }
