@@ -14,23 +14,15 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
-from parser.ast.base import AstNode
+from parser.ast.base import AstNode, Value
 from parser.ast.block import Block
-from typing import List
-
-class ConditionalEntry (AstNode):
-
-  def __init__ (self, condition: AstNode, body: Block):
-
-    super ().__init__ ()
-
-    self.body = body
-    self.condition = condition
 
 class Conditional (AstNode):
 
-  def __init__ (self, entries: List[ConditionalEntry]):
+  def __init__ (self, condition: Value, direct: Block, reverse: Block):
 
     super ().__init__ ()
 
-    self.entries = entries
+    self.condition = condition
+    self.direct = direct
+    self.reverse = reverse

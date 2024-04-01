@@ -16,7 +16,7 @@
 #
 from parser.ast.base import BASE_TYPE
 from parser.ast.block import Block
-from parser.ast.conditional import Conditional, ConditionalEntry
+from parser.ast.conditional import Conditional
 from parser.ast.decl import FunctionDecl, ProtocolDecl, TypeDecl
 from parser.ast.invoke import Invoke
 from parser.ast.let import Let
@@ -24,7 +24,11 @@ from parser.ast.loops import While
 from parser.ast.operator import BinaryOperator, UnaryOperator
 from parser.ast.param import Param, VarParam
 from parser.ast.value import BooleanValue, NumberValue, StringValue, VariableValue
-from typing import Tuple
+from typing import Any, Tuple
+
+def getat (args: Tuple, at: int, default: Any = None):
+
+  return default if at < 0 else args [at]
 
 def build_binary_operator (args: Tuple):
 
@@ -40,16 +44,32 @@ def build_boolean_value (args: Tuple):
 
 def build_conditional (args: Tuple):
 
-  return Conditional (args [0])
+  branches = args [0]
 
-def build_conditional_entry (args: Tuple, else_: bool):
+  head = branches [0]
+  last = branches [-1]
+  rest = branches [1:-1]
 
-  if (else_):
+  rest.reverse ()
 
-    return ConditionalEntry (None, args [1])
-  else:
+  head_body = head [0]
+  head_condition = head [1]
 
-    return ConditionalEntry (args [0], args [1])
+  last_body = last [0]
+
+  for branch in rest:
+
+    branch_body = branch [0]
+    branch_condition = branch [1]
+
+    tail = Conditional (branch_condition, branch_body, last_body)
+    last_body = Block ([ tail ])
+
+  return Conditional (head_condition, head_body, last_body)
+
+def build_conditional_branch (args: Tuple, blockat: int, conditionat: int):
+
+  return (getat (args, blockat), getat (args, conditionat))
 
 def build_for (args: Tuple):
 
@@ -66,13 +86,12 @@ def build_for (args: Tuple):
 
   return Let ([iterparam], Block ([ While (itercond, Block ([ Let ([varparam], block) ])) ]))
 
-def build_function_decl (args: Tuple, annotated: bool, virtual: bool):
+def build_function_decl (args: Tuple, nameat: int, paramsat: int, bodyat: int, annotationat: int):
 
-  annotation = None if not annotated else args [2]
-  body = None if virtual else (args [3] if annotated else args [2])
-
-  name = args [0]
-  params = args [1]
+  annotation = getat (args, annotationat)
+  body = getat (args, bodyat)
+  name = getat (args, nameat)
+  params = getat (args, paramsat)
 
   return FunctionDecl (name, params, annotation, body)
 
@@ -138,14 +157,15 @@ def build_string_value (args: Tuple):
 
   return StringValue (args [0])
 
-def build_type_decl (args: Tuple, inherits: bool):
+def build_type_decl (args: Tuple, nameat: int, paramsat: int, parentat: int, parentctorat: int, bodyat: int):
 
-  if (not inherits):
+  body = getat (args, bodyat, BASE_TYPE)
+  name = getat (args, nameat)
+  params = getat (args, paramsat, [])
+  parent = getat (args, parentat)
+  parentctor = getat (args, parentctorat)
 
-    return TypeDecl (args [0], BASE_TYPE, args [1])
-  else:
-
-    return TypeDecl (args [0], args [1], args [2])
+  return TypeDecl (name, params, parent, parentctor, body)
 
 def build_unary_operator (args: Tuple):
 

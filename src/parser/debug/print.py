@@ -16,7 +16,7 @@
 #
 from parser.ast.base import Constant
 from parser.ast.block import Block
-from parser.ast.conditional import Conditional, ConditionalEntry
+from parser.ast.conditional import Conditional
 from parser.ast.decl import FunctionDecl, ProtocolDecl, TypeDecl
 from parser.ast.invoke import Invoke
 from parser.ast.let import Let
@@ -48,36 +48,15 @@ class PrintVisitor (object):
   @visitor.when (Conditional)
   def visit (self, node: Conditional, tabs = 0):
 
-    entries = [ ]
-    first = True
+    condition = self.visit (node.condition)
+    direct = self.visit (node.direct, 1 + tabs)
+    reverse = self.visit (node.reverse, 1 + tabs)
 
-    for entry in node.entries:
+    head = f'if ({condition})'
+    direct = '{\n' + ('  ' * tabs) + direct + '\n' + ('  ' * tabs) + '}'
+    reverse = '{\n' + ('  ' * tabs) + reverse + '\n' + ('  ' * tabs) + '}'
 
-      if (not first):
-
-        entries.append (self.visit (entry, 0, False))
-      else:
-
-        first = False
-        entries.append (self.visit (entry, 0, True))
-
-    return '(' + '\n'.join (entries) + ')'
-
-  @visitor.when (ConditionalEntry)
-  def visit (self, node: ConditionalEntry, tabs = 0, first = False): 
-
-    if (not node.condition):
-
-      body = self.visit (node.body, 1 + tabs)
-
-      return 'else {\n' + body + '\n}'
-
-    else:
-
-      body = self.visit (node.body, 1 + tabs)
-      condition = self.visit (node.condition)
-
-      return f'{"if" if first else "elif"} ({condition})' + '{\n' + body + '\n}'
+    return f'{head} {direct} else {reverse}'
 
   @visitor.when (Constant)
   def visit (self, node: Constant, tabs = 0):
@@ -135,28 +114,35 @@ class PrintVisitor (object):
   @visitor.when (ProtocolDecl)
   def visit (self, node: ProtocolDecl, tabs = 0):
 
-    body = self.visit (node.body, 1 + tabs)
+    body = node.body
     name = node.name
     parent = node.parent
 
     head = f'protocol {name}'
     tail1 = '' if (not parent) else f' extends {parent}'
-    tail2 = '' if (not body) else ' {\n' + body + '\n}'
+    tail2 = '' if (not body) else ' {\n' + self.visit (body, 1 + tabs) + '\n}'
 
     return f'{head}{tail1}{tail2}'
 
   @visitor.when (TypeDecl)
   def visit (self, node: TypeDecl, tabs = 0):
 
-    body = self.visit (node.body, 1 + tabs)
+    body = node.body
     name = node.name
+    params = node.params
     parent = node.parent
+    parentctor = node.parentctor
 
-    head = f'type {name}'
-    tail1 = '' if (not parent) else f' inherits {parent}'
-    tail2 = '' if (not body) else ' {\n' + body + '\n}'
+    things = [
 
-    return f'{head}{tail1}{tail2}'
+      f'type {name}',
+      '' if (not params) else f' ({", ".join (list (map (lambda a: self.visit (a), params)))})',
+      '' if (not parent) else f' inherits {parent}',
+      '' if (not parentctor) else f' ({", ".join (list (map (lambda a: self.visit (a), parentctor)))})',
+      ' {\n' + self.visit (body, 1 + tabs) + '\n}',
+    ]
+
+    return ''.join (things)
 
   @visitor.when (UnaryOperator)
   def visit (self, node: UnaryOperator, tabs = 0):

@@ -19,8 +19,8 @@ let a = 4, b = 7 in { print (a - b); };
 let a = 4, b = 7 in { print (a - b); };
 print (1 + if (4 == 3) 6 else 4);
 print (1 + if (4 == 3) 6 elif (6) 5 else 4);
-let a = 6 in if (a == 6) 7 elif (a == 8) 9 elif (a == 2) 0 else 8;
 if (6 == 7) 3 elif (t == 6) 6 else 1;
+let a = 6 in if (a == 6) 7 elif (a == 8) 9 elif (a == 2) 0 else 8;
 while (a == 6) print (a);
 let a = 5 in while (4 == a) print (a);
 while (a == 6) while (b == 8) print (a + b);
@@ -31,16 +31,26 @@ type Base
 {
 }
 
-type Point
+type Point (x, y) inherits Base
 {
   x: Number = 0;
   y: Number = 0;
 }
 
-type PolarPoint inherits Point
+type PolarPoint (x, y) inherits Point (sin (x), cos (y))
 {
   rho () => x ^ 2 + y ^ 2;
   rot (angle) => x + angle;
+}
+
+type OtherObject inherits Base
+{
+  var1: Number = 0;
+}
+
+type OtherObject2 (t) inherits Base
+{
+  var1: Number = t;
 }
 
 protocol Empty

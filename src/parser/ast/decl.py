@@ -42,10 +42,12 @@ class ProtocolDecl (AstNode):
 
 class TypeDecl (AstNode):
 
-  def __init__ (self, name: str, parent: str, body: List[AstNode]):
+  def __init__ (self, name: str, params: List[AstNode], parent: str, parentctor: List[AstNode], body: List[AstNode]):
 
     super ().__init__ ()
 
     self.body = body
     self.name = name
+    self.params = params
     self.parent = parent
+    self.parentctor = parentctor
