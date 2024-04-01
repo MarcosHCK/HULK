@@ -196,7 +196,7 @@ coerced = boolean
 boolean = (boolean + (literal '<' * '>' * '<=' * '>=' * '==' * '!=') + concated)  / builder ('build_binary_operator')
 boolean = concated
 
-concated = (numeric + (literal '@' + '@@') + concated)                            / builder ('build_binary_operator')
+concated = (numeric + (literal '@@' * '@') + concated)                            / builder ('build_binary_operator')
 concated = numeric
 
 numeric = (numeric + (literal '+' * '-') + term)                                  / builder ('build_binary_operator')
