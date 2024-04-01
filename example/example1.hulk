@@ -67,3 +67,9 @@ protocol Pointable extends Relatable
 {
   points (): Bool;
 }
+
+let a = 6 in {
+
+  a := 7;
+  print (a);
+};

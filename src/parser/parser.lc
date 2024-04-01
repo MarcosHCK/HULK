@@ -159,6 +159,86 @@ typedecl_method = (IDENTIFIER + params + inline_block)                          
 typedecl_method = (IDENTIFIER + params + keyed_block)                             / builder ('build_function_decl', 0, 1, 2, -1)
 
 --
+-- Blocks
+--
+
+block = keyed_block
+block = single_block
+
+keyed_block = (keyed_stmts + ';')                                                 / builder ('build_block')
+keyed_block = keyed_stmts                                                         / builder ('build_block')
+single_block = single_stmt                                                        / builder ('build_block')
+
+keyed_stmts = ('{' + stmtlist + '}')                                              / pickarg (1)
+single_stmt = stmt                                                                / beginlist (0)
+
+stmtlist = (stmt + stmtlist)                                                      / nextlist (0, 1)
+stmtlist = stmt                                                                   / beginlist (0)
+
+stmt = (expression + ';')                                                         / pickarg (0)
+
+--
+-- Expressions
+--
+
+expression = (literal '!' + expression)                                           / builder ('build_unary_operator')
+expression = disjuntive
+
+disjuntive = (disjuntive + '|' + conjuntive)                                      / builder ('build_binary_operator')
+disjuntive = conjuntive
+
+conjuntive = (conjuntive + '&' + coerced)                                         / builder ('build_binary_operator')
+conjuntive = coerced
+
+coerced = (coerced + (literal 'as' * 'is') + boolean)                             / builder ('build_binary_operator')
+coerced = boolean
+
+boolean = (boolean + (literal '<' * '>' * '<=' * '>=' * '==' * '!=') + concated)  / builder ('build_binary_operator')
+boolean = concated
+
+concated = (numeric + (literal '@' + '@@') + concated)                            / builder ('build_binary_operator')
+concated = numeric
+
+numeric = (numeric + (literal '+' * '-') + term)                                  / builder ('build_binary_operator')
+numeric = term
+
+term = (term + (literal '*' * '/' * '%') + factor)                                / builder ('build_binary_operator')
+term = factor
+
+factor = (power + (literal '^') + factor)                                         / builder ('build_binary_operator')
+factor = power
+
+power = BOOLEAN_VALUE                                                             / builder ('build_boolean_value')
+power = NUMBER_VALUE                                                              / builder ('build_number_value')
+power = STRING_VALUE                                                              / builder ('build_string_value')
+power = (classaccess + args)                                                      / builder ('build_invoke')
+power = classaccess
+power = (variable + args)                                                         / builder ('build_invoke')
+power = variable
+power = parenthized
+
+power = dtor_assign
+
+power = if_
+power = while_
+power = for_
+power = let
+
+power = newvalue
+
+arglist = (expression + ',' + arglist)                                            / nextlist (0, 2)
+arglist = expression                                                              / beginlist (0)
+
+args = (literal '(' + arglist + ')')                                              / pickarg (1)
+args = (literal '(' + ')')                                                        / emptylist ()
+
+classaccess = (variable + '.' + IDENTIFIER)                                       / builder ('build_class_access', 0, 2)
+
+variable = IDENTIFIER                                                             / builder ('build_var_value')
+
+parenthized = (literal '(' + expression + ')')                                    / pickarg (1)
+
+--
 -- Construct block
 --
 
@@ -185,6 +265,13 @@ conditional_else = (else_head + construct_block)                                
 if_head = (literal 'if' + parenthized)                                            / pickarg (1)
 elif_head = (literal 'elif' + parenthized)                                        / pickarg (1)
 else_head = literal 'else'
+
+--
+-- Destructive assigment
+--
+
+dtor_assign = (variable + ':=' + expression)                                      / builder ('build_destructive_assignment', 0, 2)
+dtor_assign = (classaccess + ':=' + expression)                                   / builder ('build_destructive_assignment', 0, 2)
 
 --
 -- Let
@@ -215,68 +302,8 @@ while_ = (while_head + construct_block)                                         
 while_head = (literal 'while' + parenthized)                                      / pickarg (1)
 
 --
--- Blocks
+-- New expression
 --
 
-block = keyed_block
-block = single_block
-
-keyed_block = (keyed_stmts + ';')                                                 / builder ('build_block')
-keyed_block = keyed_stmts                                                         / builder ('build_block')
-single_block = single_stmt                                                        / builder ('build_block')
-
-keyed_stmts = ('{' + stmtlist + '}')                                              / pickarg (1)
-single_stmt = stmt                                                                / beginlist (0)
-
-stmtlist = (stmt + stmtlist)                                                      / nextlist (0, 1)
-stmtlist = stmt                                                                   / beginlist (0)
-
-stmt = (expression + ';')                                                         / pickarg (0)
-
---
--- Expressions
---
-
-expression = (literal '!' + expression)                                           / builder ('build_unary_operator')
-expression = disjuntive
-
-disjuntive = (disjuntive + '|' + conjuntive)                                      / builder ('build_binary_operator')
-disjuntive = conjuntive
-
-conjuntive = (conjuntive + '&' + boolean)                                         / builder ('build_binary_operator')
-conjuntive = boolean
-
-boolean = (boolean + (literal '<' * '>' * '<=' * '>=' * '==' * '!=') + concated)  / builder ('build_binary_operator')
-boolean = concated
-
-concated = (numeric + (literal '@' + '@@') + concated)                            / builder ('build_binary_operator')
-concated = numeric
-
-numeric = (numeric + (literal '+' * '-') + term)                                  / builder ('build_binary_operator')
-numeric = term
-
-term = (term + (literal '*' * '/' * '%') + factor)                                / builder ('build_binary_operator')
-term = factor
-
-factor = (power + (literal '^') + factor)                                         / builder ('build_binary_operator')
-factor = power
-
-power = BOOLEAN_VALUE                                                             / builder ('build_boolean_value')
-power = NUMBER_VALUE                                                              / builder ('build_number_value')
-power = STRING_VALUE                                                              / builder ('build_string_value')
-power = (IDENTIFIER + args)                                                       / builder ('build_invoke')
-power = IDENTIFIER                                                                / builder ('build_var_value')
-power = parenthized
-
-power = if_
-power = while_
-power = for_
-power = let
-
-arglist = (expression + ',' + arglist)                                            / nextlist (0, 2)
-arglist = expression                                                              / beginlist (0)
-
-args = (literal '(' + arglist + ')')                                              / pickarg (1)
-args = (literal '(' + ')')                                                        / emptylist ()
-
-parenthized = ('(' + expression + ')')                                            / pickarg (1)
+newvalue = (newvalue_head + args)                                                 / builder ('build_newvalue', 0, 1)
+newvalue_head = (literal 'new' + IDENTIFIER)                                      / pickarg (1)

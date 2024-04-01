@@ -14,38 +14,13 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
-from parser.ast.base import Constant, Value
-from typing import List
+from parser.ast.base import AstNode, Value
 
-class BooleanValue (Constant):
+class DestructiveAssignment (AstNode):
 
-  def __init__ (self, value: str):
-
-    super ().__init__ (value == 'true')
-
-class NewValue (Value):
-
-  def __init__ (self, type_: str, arguments: List[Value]):
+  def __init__ (self, over: Value, value: Value):
 
     super ().__init__ ()
 
-    self.arguments = arguments
-    self.type = type_
-
-class NumberValue (Constant):
-
-  def __init__ (self, value: str):
-
-    super ().__init__ (float (value))
-
-class StringValue (Constant):
-
-  def __init__ (self, value: str):
-
-    super ().__init__ (value [1:-1])
-
-class VariableValue (Constant):
-
-  def __init__ (self, value: str):
-
-    super ().__init__ (value)
+    self.over = over
+    self.value = value

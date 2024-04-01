@@ -28,4 +28,5 @@ let x = new Superman() in {
         if (x is Bird) "It's bird!"
         elif (x is Plane) "It's a plane!"
         else "No, it's Superman!"
-    ); print(tan(PI) ** 2 + cot(PI) ** 2); }
+    ); print(tan(PI) ^ 2 + cot(PI) ^ 2); }
+;

@@ -14,16 +14,18 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
+from parser.ast.assignment import DestructiveAssignment
 from parser.ast.base import BASE_TYPE
 from parser.ast.block import Block
 from parser.ast.conditional import Conditional
 from parser.ast.decl import FunctionDecl, ProtocolDecl, TypeDecl
+from parser.ast.indirection import ClassAccess, VectorAccess
 from parser.ast.invoke import Invoke
 from parser.ast.let import Let
 from parser.ast.loops import While
 from parser.ast.operator import BinaryOperator, UnaryOperator
 from parser.ast.param import Param, VarParam
-from parser.ast.value import BooleanValue, NumberValue, StringValue, VariableValue
+from parser.ast.value import BooleanValue, NewValue, NumberValue, StringValue, VariableValue
 from typing import Any, Tuple
 
 def getat (args: Tuple, at: int, default: Any = None):
@@ -41,6 +43,13 @@ def build_block (args: Tuple):
 def build_boolean_value (args: Tuple):
 
   return BooleanValue (args [0])
+
+def build_class_access (args: Tuple, baseat: int, fieldat: int):
+
+  base = getat (args, baseat)
+  field = getat (args, fieldat)
+
+  return ClassAccess (base, field)
 
 def build_conditional (args: Tuple):
 
@@ -70,6 +79,13 @@ def build_conditional (args: Tuple):
 def build_conditional_branch (args: Tuple, blockat: int, conditionat: int):
 
   return (getat (args, blockat), getat (args, conditionat))
+
+def build_destructive_assignment (args: Tuple, overat: int, valueat: int):
+
+  over = getat (args, overat)
+  value = getat (args, valueat)
+
+  return DestructiveAssignment (over, value)
 
 def build_for (args: Tuple):
 
@@ -126,6 +142,13 @@ def build_list_next (args: Tuple, elmat: int, listat: int):
   arglist.extend (args [listat])
 
   return arglist
+
+def build_newvalue (args: Tuple, typeat: int, argumentsat: int):
+
+  arguments = getat (args, argumentsat)
+  type_ = getat (args, typeat)
+
+  return NewValue (type_, arguments)
 
 def build_number_value (args: Tuple):
 

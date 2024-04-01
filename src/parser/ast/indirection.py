@@ -14,38 +14,28 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
-from parser.ast.base import Constant, Value
-from typing import List
+from parser.ast.base import Value
 
-class BooleanValue (Constant):
+class Indirection (Value):
 
-  def __init__ (self, value: str):
-
-    super ().__init__ (value == 'true')
-
-class NewValue (Value):
-
-  def __init__ (self, type_: str, arguments: List[Value]):
+  def __init__ (self, base: Value):
 
     super ().__init__ ()
 
-    self.arguments = arguments
-    self.type = type_
+    self.base = base
 
-class NumberValue (Constant):
+class ClassAccess (Indirection):
 
-  def __init__ (self, value: str):
+  def __init__ (self, base: Value, field: str):
 
-    super ().__init__ (float (value))
+    super ().__init__ (base)
 
-class StringValue (Constant):
+    self.field = field
 
-  def __init__ (self, value: str):
+class VectorAccess (Indirection):
 
-    super ().__init__ (value [1:-1])
+  def __init__ (self, base: Value, index: Value):
 
-class VariableValue (Constant):
+    super ().__init__ (base)
 
-  def __init__ (self, value: str):
-
-    super ().__init__ (value)
+    self.index = index

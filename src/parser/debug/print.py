@@ -14,15 +14,18 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
+from parser.ast.assignment import DestructiveAssignment
 from parser.ast.base import Constant
 from parser.ast.block import Block
 from parser.ast.conditional import Conditional
 from parser.ast.decl import FunctionDecl, ProtocolDecl, TypeDecl
+from parser.ast.indirection import ClassAccess
 from parser.ast.invoke import Invoke
 from parser.ast.let import Let
 from parser.ast.loops import While
 from parser.ast.operator import BinaryOperator, UnaryOperator
 from parser.ast.param import Param, VarParam
+from parser.ast.value import NewValue
 import utils.visitor as visitor
 
 class PrintVisitor (object):
@@ -45,6 +48,16 @@ class PrintVisitor (object):
 
     return '\n'.join (stmts)
 
+  @visitor.when (ClassAccess)
+  def visit (self, node: ClassAccess, tabs = 0):
+
+    base = node.base
+    field = node.field
+
+    base = self.visit (node.base)
+
+    return f'{base}.{field}'
+
   @visitor.when (Conditional)
   def visit (self, node: Conditional, tabs = 0):
 
@@ -62,6 +75,14 @@ class PrintVisitor (object):
   def visit (self, node: Constant, tabs = 0):
 
     return str (node.value)
+
+  @visitor.when (DestructiveAssignment)
+  def visit (self, node: DestructiveAssignment, tabs = 0):
+
+    over = self.visit (node.over)
+    value = self.visit (node.value)
+
+    return f'{over} := ({value})'
 
   @visitor.when (FunctionDecl)
   def visit (self, node: FunctionDecl, tabs = 0):
@@ -83,10 +104,13 @@ class PrintVisitor (object):
   @visitor.when (Invoke)
   def visit (self, node: Invoke, tabs = 0):
 
-    args = node.arguments
-    args = ', '.join (list (map (lambda a: self.visit (a), args)))
+    arguments = node.arguments
+    function = node.function
+    
+    arguments = ', '.join (list (map (lambda a: self.visit (a), arguments)))
+    function = self.visit (function)
 
-    return f'({node.funcname} ({args}))'
+    return f'({function} ({arguments}))'
 
   @visitor.when (Let)
   def visit (self, node: Let, tabs = 0):
@@ -97,6 +121,16 @@ class PrintVisitor (object):
     params = ', '.join (params)
 
     return f'let {params} in ' + '{\n' + body + '\n}'
+
+  @visitor.when (NewValue)
+  def visit (self, node: NewValue, tabs = 0):
+
+    arguments = node.arguments
+    type_ = node.type
+
+    arguments = ', '.join (list (map (lambda a: self.visit (a), arguments)))
+
+    return f'new {type_} ({arguments})'
 
   @visitor.when (Param)
   def visit (self, node: Param, tabs = 0):

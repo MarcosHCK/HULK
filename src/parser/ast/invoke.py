@@ -19,9 +19,9 @@ from typing import List
 
 class Invoke (AstNode):
 
-  def __init__ (self, funcname: str, arguments: List[AstNode]):
+  def __init__ (self, function: str, arguments: List[AstNode]):
 
     super ().__init__ ()
 
     self.arguments = arguments
-    self.funcname = funcname
+    self.function = function
