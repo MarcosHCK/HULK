@@ -15,8 +15,8 @@
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
 from lexer.lexer import Lexer, Token
-from parser.debug.print import PrintVisitor
 from parser.parser import Parser
+from parser.printvisitor import PrintVisitor
 from typing import Iterable
 import argparse
 
@@ -50,6 +50,6 @@ def program ():
       lines = stream.readlines ()
       tokens = ignore (Lexer (lines)) 
 
-      print (PrintVisitor ().visit (Parser (tokens)))
+      print ('\n'.join (PrintVisitor ().visit (Parser (tokens))))
 
 program ()

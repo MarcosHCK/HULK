@@ -1,0 +1,29 @@
+type Point (x, y)
+{
+  x: Number = x;
+  y: Number = y;
+
+  getx () => self.x;
+  gety () => self.y;
+
+  setx (x: Number) => self.x := x;
+  sety (y: Number) => self.y := y;
+}
+
+function printp (point: Point)
+{
+  print ("(" @ point.getx () @ "," @ point.gety () @ ")");
+}
+
+let p = new Point (4, 6) in
+{
+  printp (p);
+
+  print (p.setx (7));
+  printp (p);
+};
+
+for (x in range (0, 10))
+{
+  print (x);
+};

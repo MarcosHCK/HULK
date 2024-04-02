@@ -14,12 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
-from parser.ast.base import AstNode
+from .base import Value
 from typing import List
 
-class Block (AstNode):
+class Block (Value):
 
-  def __init__ (self, stmts: List[AstNode]):
+  def __init__ (self, stmts: List [Value]):
 
     super ().__init__ ()
 

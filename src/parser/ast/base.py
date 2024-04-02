@@ -17,24 +17,41 @@
 from typing import Any
 
 BASE_TYPE = 'Object'
+ITERABLE_PROTOCOL = 'Iterable'
+
+class Annotable:
+
+  def __init__ (self, typeref: str, **kwargs):
+
+    super ().__init__ (**kwargs)
+
+    self.typeref = typeref
 
 class AstNode:
 
-  def __init__ (self):
+  def __init__ (self, **kwargs):
 
-    super ().__init__ ()
-    pass
+    super ().__init__ (**kwargs)
 
 class Value (AstNode):
 
-  def __init__ (self):
+  def __init__ (self, **kwargs):
 
-    super ().__init__ ()
+    super ().__init__ (**kwargs)
 
 class Constant (Value):
 
-  def __init__ (self, value: Any):
+  def __init__ (self, value: Any, **kwargs):
 
-    super ().__init__ ()
+    super ().__init__ (**kwargs)
 
     self.value = value
+
+class TypeRef (AstNode):
+
+  def __init__ (self, name: str, vector: bool, **kwargs):
+
+    super ().__init__ (**kwargs)
+
+    self.name = name
+    self.vector = vector

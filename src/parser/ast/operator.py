@@ -14,11 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
-from parser.ast.base import Value
+from .base import Value
 
 class UnaryOperator (Value):
 
-  def __init__ (self, operator, argument):
+  def __init__ (self, operator: str, argument: Value):
 
     super ().__init__ ()
 
@@ -27,7 +27,7 @@ class UnaryOperator (Value):
 
 class BinaryOperator (Value):
 
-  def __init__ (self, operator, argument, argument2):
+  def __init__ (self, operator: str, argument: Value, argument2: Value):
 
     super ().__init__ ()
 

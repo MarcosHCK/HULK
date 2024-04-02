@@ -14,10 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
-from parser.ast.base import AstNode, Value
-from parser.ast.block import Block
+from .base import Value
+from .block import Block
 
-class Conditional (AstNode):
+class Conditional (Value):
 
   def __init__ (self, condition: Value, direct: Block, reverse: Block):
 

@@ -14,25 +14,27 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
-from parser.ast.base import AstNode
-from parser.ast.block import Block
-from parser.ast.param import Param
+from .base import Annotable
+from .base import AstNode
+from .base import TypeRef
+from .base import Value
+from .block import Block
+from .param import Param
 from typing import List
 
-class FunctionDecl (AstNode):
+class FunctionDecl (AstNode, Annotable):
 
-  def __init__ (self, name: str, arguments: List[Param], annotation: AstNode, body: Block):
+  def __init__ (self, name: str, params: List[Param], annotation: TypeRef, body: Block):
 
-    super ().__init__ ()
+    super ().__init__ (typeref = annotation)
 
-    self.annotation = annotation
-    self.arguments = arguments
     self.body = body
     self.name = name
+    self.params = params
 
 class ProtocolDecl (AstNode):
 
-  def __init__ (self, name: str, parent: str, body: List[AstNode]):
+  def __init__ (self, name: str, parent: str, body: Block):
 
     super ().__init__ ()
 
@@ -42,7 +44,7 @@ class ProtocolDecl (AstNode):
 
 class TypeDecl (AstNode):
 
-  def __init__ (self, name: str, params: List[AstNode], parent: str, parentctor: List[AstNode], body: List[AstNode]):
+  def __init__ (self, name: str, params: List[Param], parent: str, parentctor: List[Value], body: Block):
 
     super ().__init__ ()
 

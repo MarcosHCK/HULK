@@ -11,6 +11,8 @@ function marcos (a) => { 8; print (7); print (a); };
 function marcos (a, b) => a + b;
 function marcos (a): void => print (3);
 function marcos (a): void { print (3); }
+function marcos (a: Number []) => print (3);
+function marcos (a): Number [] { print (3); }
 let a = 2 in { print (a); 7; } + 6;
 let a = 2 in let b = 3 in print (a + b);
 let a = 2 in sin (a) + let b = 3 in cos (b);
@@ -46,9 +48,15 @@ type PolarPoint (x, y) inherits Point (sin (x), cos (y))
 type OtherObject inherits Base
 {
   var1: Number = 0;
+  var2: Number[] = 0;
 }
 
 type OtherObject2 (t) inherits Base
+{
+  var1: Number = t;
+}
+
+type OtherObject3 (t: Number[])
 {
   var1: Number = t;
 }
@@ -66,6 +74,12 @@ protocol Relatable
 protocol Pointable extends Relatable
 {
   points (): Bool;
+}
+
+protocol OtherProto
+{
+  reg: Number[];
+  points (): Bool[];
 }
 
 let a = 6 in {

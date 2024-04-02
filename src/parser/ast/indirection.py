@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
-from parser.ast.base import Value
+from .base import Value
 
 class Indirection (Value):
 

@@ -14,11 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
-from parser.ast.base import AstNode, Value
+from .base import Value
+from .value import VariableValue
 
-class DestructiveAssignment (AstNode):
+class DestructiveAssignment (Value):
 
-  def __init__ (self, over: Value, value: Value):
+  def __init__ (self, over: VariableValue, value: Value):
 
     super ().__init__ ()
 

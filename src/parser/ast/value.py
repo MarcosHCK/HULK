@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
-from parser.ast.base import Constant, Value
+from .base import Constant, Value
 from typing import List
 
 class BooleanValue (Constant):
@@ -22,6 +22,12 @@ class BooleanValue (Constant):
   def __init__ (self, value: str):
 
     super ().__init__ (value == 'true')
+
+class DefaultValue (Constant):
+
+  def __init__ (self):
+
+    super ().__init__ (None)
 
 class NewValue (Value):
 
