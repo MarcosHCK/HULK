@@ -18,24 +18,24 @@ from .base import Value
 
 class Indirection (Value):
 
-  def __init__ (self, base: Value):
+  def __init__ (self, base: Value, **kwargs):
 
-    super ().__init__ ()
+    super ().__init__ (**kwargs)
 
     self.base = base
 
 class ClassAccess (Indirection):
 
-  def __init__ (self, base: Value, field: str):
+  def __init__ (self, base: Value, field: str, **kwargs):
 
-    super ().__init__ (base)
+    super ().__init__ (base, **kwargs)
 
     self.field = field
 
 class VectorAccess (Indirection):
 
-  def __init__ (self, base: Value, index: Value):
+  def __init__ (self, base: Value, index: Value, **kwargs):
 
-    super ().__init__ (base)
+    super ().__init__ (base, **kwargs)
 
     self.index = index

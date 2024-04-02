@@ -21,9 +21,9 @@ from typing import List
 
 class Let (Value):
 
-  def __init__ (self, params: List[VarParam], body: Block):
+  def __init__ (self, params: List[VarParam], body: Block, **kwargs):
 
-    super ().__init__ ()
+    super ().__init__ (**kwargs)
 
     self.body = body
     self.params = params

@@ -19,9 +19,9 @@ from .block import Block
 
 class Conditional (Value):
 
-  def __init__ (self, condition: Value, direct: Block, reverse: Block):
+  def __init__ (self, condition: Value, direct: Block, reverse: Block, **kwargs):
 
-    super ().__init__ ()
+    super ().__init__ (**kwargs)
 
     self.condition = condition
     self.direct = direct

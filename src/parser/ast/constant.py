@@ -15,12 +15,12 @@
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
 from .base import Value
-from .block import Block
-from .conditional import Conditional
-from .value import DefaultValue
+from typing import Any
 
-class While (Conditional):
+class Constant (Value):
 
-  def __init__ (self, condition: Value, body: Block, **kwargs):
+  def __init__ (self, value: Any, **kwargs):
 
-    super ().__init__ (condition = condition, direct = body, reverse = Block ([ DefaultValue () ]), **kwargs)
+    super ().__init__ (**kwargs)
+
+    self.value = value

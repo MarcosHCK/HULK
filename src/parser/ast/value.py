@@ -14,44 +14,45 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
-from .base import Constant, Value
+from .base import Value
+from .constant import Constant
 from typing import List
 
 class BooleanValue (Constant):
 
-  def __init__ (self, value: str):
+  def __init__ (self, value: str, **kwargs):
 
-    super ().__init__ (value == 'true')
+    super ().__init__ (value == 'true', **kwargs)
 
 class DefaultValue (Constant):
 
-  def __init__ (self):
+  def __init__ (self, **kwargs):
 
-    super ().__init__ (None)
+    super ().__init__ (None, **kwargs)
 
 class NewValue (Value):
 
-  def __init__ (self, type_: str, arguments: List[Value]):
+  def __init__ (self, type_: str, arguments: List[Value], **kwargs):
 
-    super ().__init__ ()
+    super ().__init__ (**kwargs)
 
     self.arguments = arguments
     self.type = type_
 
 class NumberValue (Constant):
 
-  def __init__ (self, value: str):
+  def __init__ (self, value: str, **kwargs):
 
-    super ().__init__ (float (value))
+    super ().__init__ (float (value), **kwargs)
 
 class StringValue (Constant):
 
-  def __init__ (self, value: str):
+  def __init__ (self, value: str, **kwargs):
 
-    super ().__init__ (value [1:-1])
+    super ().__init__ (value [1:-1], **kwargs)
 
 class VariableValue (Constant):
 
-  def __init__ (self, value: str):
+  def __init__ (self, value: str, **kwargs):
 
-    super ().__init__ (value)
+    super ().__init__ (value, **kwargs)

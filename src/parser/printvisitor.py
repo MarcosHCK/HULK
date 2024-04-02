@@ -15,11 +15,12 @@
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
 from .ast.assignment import DestructiveAssignment
-from .ast.base import Constant, TypeRef
+from .ast.base import TypeRef
 from .ast.block import Block
 from .ast.conditional import Conditional
+from .ast.constant import Constant
 from .ast.decl import FunctionDecl, ProtocolDecl, TypeDecl
-from .ast.indirection import ClassAccess, VectorAccess
+from .ast.indirection import ClassAccess
 from .ast.invoke import Invoke
 from .ast.let import Let
 from .ast.loops import While
@@ -90,6 +91,18 @@ class PrintVisitor (object):
     if_.append ('}')
 
     return if_
+
+  @visitor.when (DestructiveAssignment)
+  def visit (self, node: DestructiveAssignment):
+
+    assigment = [ ]
+
+    assigment.extend (self.visit (node.over))
+    assigment.append (' := ')
+
+    assigment.extend (self.visit (node.value))
+
+    return [ ''.join (assigment) ]
 
   @visitor.when (FunctionDecl)
   def visit (self, node: FunctionDecl):

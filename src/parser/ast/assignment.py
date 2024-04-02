@@ -19,9 +19,9 @@ from .value import VariableValue
 
 class DestructiveAssignment (Value):
 
-  def __init__ (self, over: VariableValue, value: Value):
+  def __init__ (self, over: VariableValue, value: Value, **kwargs):
 
-    super ().__init__ ()
+    super ().__init__ (**kwargs)
 
     self.over = over
     self.value = value

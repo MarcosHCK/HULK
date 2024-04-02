@@ -18,18 +18,18 @@ from .base import Value
 
 class UnaryOperator (Value):
 
-  def __init__ (self, operator: str, argument: Value):
+  def __init__ (self, operator: str, argument: Value, **kwargs):
 
-    super ().__init__ ()
+    super ().__init__ (**kwargs)
 
     self.argument = argument
     self.operator = operator
 
 class BinaryOperator (Value):
 
-  def __init__ (self, operator: str, argument: Value, argument2: Value):
+  def __init__ (self, operator: str, argument: Value, argument2: Value, **kwargs):
 
-    super ().__init__ ()
+    super ().__init__ (**kwargs)
 
     self.argument = argument
     self.argument2 = argument2

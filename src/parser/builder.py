@@ -15,6 +15,7 @@
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
 from .ast.assignment import DestructiveAssignment
+from .ast.base import AstNode
 from .ast.base import BASE_TYPE, ITERABLE_PROTOCOL
 from .ast.base import TypeRef, Value
 from .ast.block import Block
@@ -27,29 +28,47 @@ from .ast.loops import While
 from .ast.operator import BinaryOperator, UnaryOperator
 from .ast.param import Param, VarParam
 from .ast.value import BooleanValue, NewValue, NumberValue, StringValue, VariableValue
-from typing import Any, Tuple
+from lexer.lexer import Token
+from typing import Any, List, Tuple
+
+def annot (first: Token):
+
+  if isinstance (first, Token): return { 'line': first.line, 'column': first.column }
+  elif isinstance (first, AstNode): return { 'line': first.line, 'column': first.column }
+  elif isinstance (first, list): return {} if len (first) == 0 else annot (first [0])
+  else: raise Exception (f'can not extract line info from \'{type (first)}\' object')
 
 def getat (args: Tuple, at: int, default: Any = None):
 
   return default if at < 0 else args [at]
 
-def build_binary_operator (args: Tuple, aat: int = 0, bat: int = 2, opat: int = 1):
+def getvat (args: Tuple, at: int, default: Any = None):
 
-  return BinaryOperator (getat (args, opat), getat (args, aat), getat (args, bat))
+  token = getat (args, at, None)
 
-def build_block (args: Tuple, stmtsat: int = 0):
+  return default if not token else token.value
 
-  return Block (getat (args, stmtsat))
+def build_binary_operator (args: Tuple, first: Token, aat: int = 0, bat: int = 2, opat: int = 1):
 
-def build_boolean_value (args: Tuple, valueat: int = 0):
+  op = getvat (args, opat)
+  a = getat (args, aat)
+  b = getat (args, bat)
 
-  return BooleanValue (getat (args, valueat))
+  return BinaryOperator (op, a, b, **annot (first))
 
-def build_class_access (args: Tuple, baseat: int = 0, fieldat: int = 1):
+def build_block (args: Tuple, first: Token, stmtsat: int = 0):
 
-  return ClassAccess (getat (args, baseat), getat (args, fieldat))
+  return Block (getat (args, stmtsat), **annot (first))
 
-def build_conditional (args: Tuple, branchesat: int = 0):
+def build_boolean_value (args: Tuple, first: Token, valueat: int = 0):
+
+  return BooleanValue (getvat (args, valueat), **annot (first))
+
+def build_class_access (args: Tuple, first: Token, baseat: int = 0, fieldat: int = 1):
+
+  return ClassAccess (getat (args, baseat), getvat (args, fieldat), **annot (first))
+
+def build_conditional (args: Tuple, first: Token, branchesat: int = 0):
 
   branches = getat (args, branchesat)
 
@@ -61,6 +80,7 @@ def build_conditional (args: Tuple, branchesat: int = 0):
 
   head_body = head [0]
   head_condition = head [1]
+  head_annot = head [2]
 
   last_body = last [0]
 
@@ -68,62 +88,63 @@ def build_conditional (args: Tuple, branchesat: int = 0):
 
     branch_body = branch [0]
     branch_condition = branch [1]
+    branch_annot = branch [2]
 
-    tail = Conditional (branch_condition, branch_body, last_body)
+    tail = Conditional (branch_condition, branch_body, last_body, **branch_annot)
     last_body = Block ([ tail ])
 
-  return Conditional (head_condition, head_body, last_body)
+  return Conditional (head_condition, head_body, last_body, **head_annot)
 
-def build_conditional_branch (args: Tuple, blockat: int = 1, conditionat: int = 0):
+def build_conditional_branch (args: Tuple, first: Token, blockat: int = 1, conditionat: int = 0):
 
-  return (getat (args, blockat), getat (args, conditionat))
+  return (getat (args, blockat), getat (args, conditionat), annot (first))
 
-def build_destructive_assignment (args: Tuple, overat: int = 0, valueat: int = 1):
+def build_destructive_assignment (args: Tuple, first: Token, overat: int = 0, valueat: int = 1):
 
-  return DestructiveAssignment (getat (args, overat), getat (args, valueat))
+  return DestructiveAssignment (getat (args, overat), getat (args, valueat), **annot (first))
 
-def build_for (args: Tuple, paramat: int = 0, blockat: int = 1):
+def build_for (args: Tuple, first: Token, paramat: int = 0, blockat: int = 1):
 
-  param: Param = getat (args, paramat)
+  param: VarParam = getat (args, paramat)
   block: Block = getat (args, blockat)
 
   name = param.name
   typeref = param.typeref
 
-  itertyperef = TypeRef (ITERABLE_PROTOCOL, False)
-  iterparam = VarParam ('iterable', itertyperef, param.value)
-  iternext = Invoke (ClassAccess (VariableValue ('iterable'), 'next'), [])
-  itercurr = Invoke (ClassAccess (VariableValue ('iterable'), 'current'), [])
-  letparam = VarParam (name, typeref, itercurr)
+  itertyperef = TypeRef (ITERABLE_PROTOCOL, False, **annot (first))
+  iterparam = VarParam ('iterable', itertyperef, param.value, **annot (first))
+  iternext = Invoke (ClassAccess (VariableValue ('iterable'), 'next'), [], **annot (first))
+  itercurr = Invoke (ClassAccess (VariableValue ('iterable'), 'current'), [], **annot (first))
+  letparam = VarParam (name, typeref, itercurr, **annot (first))
 
-  return Let ([iterparam], Block ([ While (iternext, Block ([ Let ([letparam], block) ])) ]))
+  return Let ([iterparam], Block ([ While (iternext, Block ([ Let ([letparam], block) ])) ]), **annot (first))
 
-def build_functiondecl (args: Tuple, nameat: int = 0, paramsat: int = 1, bodyat: int = 2, annotationat: int = 3):
+def build_functiondecl (args: Tuple, first: Token, nameat: int = 0, paramsat: int = 1, bodyat: int = 2, annotationat: int = 3):
 
-  annotation: str = getat (args, annotationat)
+  annotation: TypeRef = getat (args, annotationat)
   body: Block = getat (args, bodyat)
-  name: str = getat (args, nameat)
+  name: str = getvat (args, nameat)
   params: List[Param] = getat (args, paramsat)
 
-  return FunctionDecl (name, params, annotation, body)
+  return FunctionDecl (name, params, annotation, body, **annot (first))
 
-def build_invoke (args: Tuple, targetat: int = 0, argumentsat: int = 1):
+def build_invoke (args: Tuple, first: Token, targetat: int = 0, argumentsat: int = 1):
 
-  return Invoke (getat (args, targetat), getat (args, argumentsat))
+  return Invoke (getat (args, targetat), getat (args, argumentsat), **annot (first))
 
-def build_let (args: Tuple, paramsat: int = 0, blockat: int = 1):
+def build_let (args: Tuple, first: Token, paramsat: int = 0, blockat: int = 1):
 
-  return Let (getat (args, paramsat), getat (args, blockat))
+  return Let (getat (args, paramsat), getat (args, blockat), **annot (first))
 
-def build_list_begin (args: Tuple, index: int):
+def build_list_begin (args: Tuple, first: Token, index: int):
 
   return [ args [index] ]
 
-def build_list_empty (args: Tuple):
+def build_list_empty (args: Tuple, first: Token):
 
   return [ ]
 
-def build_list_join (args: Tuple, list1at: int = 0, list2at: int = 1):
+def build_list_join (args: Tuple, first: Token, list1at: int = 0, list2at: int = 1):
 
   arglist = [ ]
   arglist.extend (getat (args, list1at))
@@ -131,7 +152,7 @@ def build_list_join (args: Tuple, list1at: int = 0, list2at: int = 1):
 
   return arglist
 
-def build_list_next (args: Tuple, elmat: int = 0, listat: int = 1):
+def build_list_next (args: Tuple, first: Token, elmat: int = 0, listat: int = 1):
 
   arglist = [ ]
   arglist.append (getat (args, elmat))
@@ -139,69 +160,69 @@ def build_list_next (args: Tuple, elmat: int = 0, listat: int = 1):
 
   return arglist
 
-def build_newvalue (args: Tuple, typeat: int = 0, argumentsat: int = 1):
+def build_newvalue (args: Tuple, first: Token, typeat: int = 0, argumentsat: int = 1):
 
   arguments = getat (args, argumentsat)
-  type_ = getat (args, typeat)
+  type_ = getvat (args, typeat)
 
-  return NewValue (type_, arguments)
+  return NewValue (type_, arguments, **annot (first))
 
-def build_number_value (args: Tuple, valueat: int = 0):
+def build_number_value (args: Tuple, first: Token, valueat: int = 0):
 
-  return NumberValue (getat (args, valueat))
+  return NumberValue (getvat (args, valueat), **annot (first))
 
-def build_param (args: Tuple, nameat: int = 0, annotationat: int = 1):
+def build_param (args: Tuple, first: Token, nameat: int = 0, annotationat: int = 1):
 
-  name = getat (args, nameat)
+  name = getvat (args, nameat)
   annotation = getat (args, annotationat)
 
-  return Param (name, annotation)
+  return Param (name, annotation, **annot (first))
 
-def build_pickarg (args: Tuple, index: int):
+def build_pickarg (args: Tuple, first: Token, index: int):
 
   return args [index]
 
-def build_protocoldecl (args: Tuple, nameat: int = 0, parentat: int = 1, bodyat: int = 2):
+def build_protocoldecl (args: Tuple, first: Token, nameat: int = 0, parentat: int = 1, bodyat: int = 2):
 
   body = getat (args, bodyat)
-  name = getat (args, nameat)
-  parent = getat (args, parentat)
+  name = getvat (args, nameat)
+  parent = getvat (args, parentat)
 
-  return ProtocolDecl (name, parent, body)
+  return ProtocolDecl (name, parent, body, **annot (first))
 
-def build_string_value (args: Tuple, valueat: int = 0):
+def build_string_value (args: Tuple, first: Token, valueat: int = 0):
 
-  return StringValue (getat (args, valueat))
+  return StringValue (getvat (args, valueat), **annot (first))
 
-def build_typedecl (args: Tuple, nameat: int = 0, paramsat: int = 1, parentat: int = 2, parentctorat: int = 3, bodyat: int = 4):
+def build_typedecl (args: Tuple, first: Token, nameat: int = 0, paramsat: int = 1, parentat: int = 2, parentctorat: int = 3, bodyat: int = 4):
 
-  body: Block = getat (args, bodyat, BASE_TYPE)
-  name: str = getat (args, nameat)
+  body: Block = getat (args, bodyat)
+  name: str = getvat (args, nameat)
   params: List[Param] = getat (args, paramsat, [ ])
-  parent: str = getat (args, parentat)
+  parent: str = getvat (args, parentat, BASE_TYPE)
   parentctor: List[Value] = getat (args, parentctorat, [ ])
 
-  return TypeDecl (name, params, parent, parentctor, body)
+  return TypeDecl (name, params, parent, parentctor, body, **annot (first))
 
-def build_typeref (args: Tuple, nameat: int = 0, vector: bool = False):
+def build_typeref (args: Tuple, first: Token, nameat: int = 0, vector: bool = False):
 
-  return TypeRef (getat (args, nameat), vector)
+  return TypeRef (getvat (args, nameat), vector, **annot (first))
 
-def build_unary_operator (args: Tuple, opat = 0, aat: int = 1):
+def build_unary_operator (args: Tuple, first: Token, opat = 0, aat: int = 1):
 
-  return UnaryOperator (getat (args, opat), getat (args, aat))
+  return UnaryOperator (getvat (args, opat), getat (args, aat), **annot (first))
 
-def build_varparam (args: Tuple, paramat: int = 0, valueat: int = 1):
+def build_varparam (args: Tuple, first: Token, paramat: int = 0, valueat: int = 1):
 
   param: Param = getat (args, paramat)
   value: Value = getat (args, valueat)
 
-  return VarParam (param.name, param.typeref, value)
+  return VarParam (param.name, param.typeref, value, **annot (first))
 
-def build_var_value (args: Tuple, valueat: int = 0):
+def build_var_value (args: Tuple, first: Token, valueat: int = 0):
 
-  return VariableValue (args [0])
+  return VariableValue (getvat (args, valueat), **annot (first))
 
-def build_while (args: Tuple, conditionat: int = 0, blockat: int = 1):
+def build_while (args: Tuple, first: Token, conditionat: int = 0, blockat: int = 1):
 
-  return While (getat (args, conditionat), getat (args, blockat))
+  return While (getat (args, conditionat), getat (args, blockat), **annot (first))

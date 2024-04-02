@@ -14,7 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
-from .base import Annotable
 from .base import AstNode
 from .base import TypeRef
 from .base import Value
@@ -22,21 +21,22 @@ from .block import Block
 from .param import Param
 from typing import List
 
-class FunctionDecl (AstNode, Annotable):
+class FunctionDecl (AstNode):
 
-  def __init__ (self, name: str, params: List[Param], annotation: TypeRef, body: Block):
+  def __init__ (self, name: str, params: List[Param], typeref: TypeRef, body: Block, **kwargs):
 
-    super ().__init__ (typeref = annotation)
+    super ().__init__ (**kwargs)
 
     self.body = body
     self.name = name
     self.params = params
+    self.typeref = typeref
 
 class ProtocolDecl (AstNode):
 
-  def __init__ (self, name: str, parent: str, body: Block):
+  def __init__ (self, name: str, parent: str, body: Block, **kwargs):
 
-    super ().__init__ ()
+    super ().__init__ (**kwargs)
 
     self.body = body
     self.name = name
@@ -44,9 +44,9 @@ class ProtocolDecl (AstNode):
 
 class TypeDecl (AstNode):
 
-  def __init__ (self, name: str, params: List[Param], parent: str, parentctor: List[Value], body: Block):
+  def __init__ (self, name: str, params: List[Param], parent: str, parentctor: List[Value], body: Block, **kwargs):
 
-    super ().__init__ ()
+    super ().__init__ (**kwargs)
 
     self.body = body
     self.name = name

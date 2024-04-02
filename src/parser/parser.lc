@@ -32,7 +32,7 @@ local function builder (funcname, ...)
   for _, a in ipairs ({...}) do args = args .. ',' .. pythonize (a) end
 
   local line1 = ('from parser.builder import %s'):format (funcname)
-  local line2 = ('return %s (args%s)'):format (funcname, args)
+  local line2 = ('return %s (args, first%s)'):format (funcname, args)
   return verbatim (line1, line2)
 end
 

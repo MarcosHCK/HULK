@@ -14,23 +14,23 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
-from .base import Annotable
 from .base import TypeRef
 from .base import Value
 from typing import Optional
 
-class Param (Value, Annotable):
+class Param (Value):
 
-  def __init__ (self, name: str, annotation: TypeRef):
+  def __init__ (self, name: str, typeref: TypeRef, **kwargs):
 
-    super ().__init__ (typeref = annotation)
+    super ().__init__ (**kwargs)
 
     self.name = name
+    self.typeref = typeref
 
 class VarParam (Param):
 
-  def __init__ (self, name: str, annotation: TypeRef, value: Value):
+  def __init__ (self, name: str, typeref: TypeRef, value: Value, **kwargs):
 
-    super ().__init__ (name = name, annotation = annotation)
+    super ().__init__ (name = name, typeref = typeref, **kwargs)
 
     self.value = value
