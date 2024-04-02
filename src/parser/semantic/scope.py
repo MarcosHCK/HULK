@@ -14,28 +14,72 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
-from mimetypes import init
 from ..ast.base import TypeRef
-from typing import Dict
+from typing import Any, Dict
 
 class Scope:
 
   def __init__ (self) -> None:
 
+    self.types: Dict[str, TypeRef] = { }
     self.variables: Dict[str, TypeRef] = { }
+
+  def addt (self, name: str, typeref: TypeRef) -> None:
+
+    self.types[name] = typeref
 
   def addv (self, name: str, typeref: TypeRef) -> None:
 
     self.variables[name] = typeref
 
-  def getv (self, name: str) -> None | TypeRef:
+  def derive (self, typeref: TypeRef) -> TypeRef:
 
-    return self.variables.get (name)
+    better = self.gett (typeref.name)
+
+    if not better:
+
+      return typeref
+    else:
+
+      better = better.clone ()
+
+      better.vector = typeref.vector
+
+      return better
+
+  def diff (self, other):
+
+    o_types: Dict[str, TypeRef] = other.types
+    o_variables: Dict[str, TypeRef] = other.variables
+    scope = Scope ()
+
+    for name, type in self.types.items ():
+
+      if o_types.get (name) == None:
+
+        scope.addt (name, type)
+
+    for name, variable in self.variables.items ():
+
+      if o_variables.get (name) == None:
+
+        scope.addv (name, variable)
+
+    return scope
+
+  def gett (self, name: str, default: Any = None) -> None | TypeRef:
+
+    return self.types.get (name, default)
+
+  def getv (self, name: str, default: Any = None) -> None | TypeRef:
+
+    return self.variables.get (name, default)
 
   def clone (self):
 
     child = Scope ()
 
+    child.types = self.types.copy ()
     child.variables = self.variables.copy ()
 
     return child

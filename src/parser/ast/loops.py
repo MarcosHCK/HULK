@@ -14,10 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
-from .base import Value
-from .block import Block
-from .conditional import Conditional
-from .value import DefaultValue
+from parser.ast.base import Value
+from parser.ast.block import Block
+from parser.ast.conditional import Conditional
+from parser.ast.value import DefaultValue
 
 class While (Conditional):
 

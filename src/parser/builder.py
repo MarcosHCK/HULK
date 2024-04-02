@@ -14,20 +14,21 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
-from .ast.assignment import DestructiveAssignment
-from .ast.base import AstNode
-from .ast.base import BASE_TYPE, ITERABLE_PROTOCOL
-from .ast.base import TypeRef, Value
-from .ast.block import Block
-from .ast.conditional import Conditional
-from .ast.decl import FunctionDecl, ProtocolDecl, TypeDecl
-from .ast.indirection import ClassAccess
-from .ast.invoke import Invoke
-from .ast.let import Let
-from .ast.loops import While
-from .ast.operator import BinaryOperator, UnaryOperator
-from .ast.param import Param, VarParam
-from .ast.value import BooleanValue, NewValue, NumberValue, StringValue, VariableValue
+from parser.ast.assignment import DestructiveAssignment
+from parser.ast.base import AstNode
+from parser.ast.base import BASE_TYPE, ITERABLE_PROTOCOL
+from parser.ast.base import Value
+from parser.ast.block import Block
+from parser.ast.conditional import Conditional
+from parser.ast.decl import FunctionDecl, ProtocolDecl, TypeDecl
+from parser.ast.indirection import ClassAccess
+from parser.ast.invoke import Invoke
+from parser.ast.let import Let
+from parser.ast.loops import While
+from parser.ast.operator import BinaryOperator, UnaryOperator
+from parser.ast.param import Param, VarParam
+from parser.ast.value import BooleanValue, NewValue, NumberValue, StringValue, VariableValue
+from parser.types import TypeRef
 from lexer.lexer import Token
 from typing import Any, List, Tuple
 
@@ -165,7 +166,7 @@ def build_newvalue (args: Tuple, first: Token, typeat: int = 0, argumentsat: int
   arguments = getat (args, argumentsat)
   type_ = getvat (args, typeat)
 
-  return NewValue (type_, arguments, **annot (first))
+  return NewValue (TypeRef (type_, False), arguments, **annot (first))
 
 def build_number_value (args: Tuple, first: Token, valueat: int = 0):
 

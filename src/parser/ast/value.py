@@ -14,8 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
-from .base import Value
-from .constant import Constant
+from parser.ast.base import Value
+from parser.ast.constant import Constant
+from parser.types import TypeRef
 from typing import List
 
 class BooleanValue (Constant):
@@ -32,12 +33,11 @@ class DefaultValue (Constant):
 
 class NewValue (Value):
 
-  def __init__ (self, type_: str, arguments: List[Value], **kwargs):
+  def __init__ (self, typeref: TypeRef, arguments: List[Value], **kwargs):
 
-    super ().__init__ (**kwargs)
+    super ().__init__ (typeref = typeref, **kwargs)
 
     self.arguments = arguments
-    self.type = type_
 
 class NumberValue (Constant):
 

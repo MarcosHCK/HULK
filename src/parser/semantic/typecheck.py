@@ -14,27 +14,29 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
+from parser.ast.assignment import DestructiveAssignment
+from parser.ast.base import BOOLEAN_TYPE, NUMBER_TYPE, STRING_TYPE
+from parser.ast.block import Block
+from parser.ast.conditional import Conditional
+from parser.ast.constant import Constant
+from parser.ast.decl import FunctionDecl, ProtocolDecl, TypeDecl
+from parser.ast.indirection import ClassAccess
 from parser.ast.invoke import Invoke
-from ..ast.decl import FunctionDecl
-from ..ast.assignment import DestructiveAssignment
-from ..ast.base import BOOL_TYPE, NUMBER_TYPE, STRING_TYPE
-from ..ast.block import Block
-from ..ast.conditional import Conditional
-from ..ast.constant import Constant
-from ..ast.let import Let
-from ..ast.loops import While
-from ..ast.operator import BinaryOperator, UnaryOperator
-from ..ast.param import Param, VarParam
-from ..ast.types import AnyType, FunctionType, TypeRef
-from ..ast.value import VariableValue
-from .exception import SemanticException
-from .scope import Scope
+from parser.ast.let import Let
+from parser.ast.loops import While
+from parser.ast.operator import BinaryOperator, UnaryOperator
+from parser.ast.param import Param, VarParam
+from parser.ast.value import NewValue, VariableValue
+from parser.semantic.exception import SemanticException
+from parser.semantic.scope import Scope
+from parser.types import AnyType, CompositeType, FunctionType, ProtocolType, TypeRef
 import utils.visitor as visitor
 
 class TypeCheckVisitor:
 
-  def __init__ (self, scope: Scope, invoker: bool = False) -> None:
+  def __init__ (self, scope: Scope, composing: bool = False, invoker: bool = False) -> None:
 
+    self.composing = composing
     self.invoker = invoker
     self.scope = scope
 
@@ -51,7 +53,7 @@ class TypeCheckVisitor:
     match node.operator:
 
       case 'as': value = node.argument2 # type: ignore
-      case 'is': value = BOOL_TYPE
+      case 'is': value = BOOLEAN_TYPE
 
       case '@' | '@@': value = STRING_TYPE
 
@@ -68,7 +70,7 @@ class TypeCheckVisitor:
 
           match node.operator:
 
-            case '==' | '!=' | '>=' | '<=' | '>' | '<': value = BOOL_TYPE
+            case '==' | '!=' | '>=' | '<=' | '>' | '<': value = BOOLEAN_TYPE
             case _: value = (arg2 if isinstance (arg1, AnyType) else arg1)
 
     node.typeref = value
@@ -84,16 +86,43 @@ class TypeCheckVisitor:
 
       value = self.visit (stmt) # type: ignore
 
+      if self.composing and isinstance (stmt, Param):
+
+        self.scope.addv (stmt.name, value)
+
     node.typeref = value
 
     return value
 
+  @visitor.when (ClassAccess)
+  def visit (self, node: ClassAccess) -> TypeRef:
+
+    base = self.visit (node.base) # type: ignore
+
+    if not isinstance (base, CompositeType):
+
+      raise SemanticException (node, f'trying to access a non-composite type \'{base}\'')
+
+    else:
+
+      member = base.members.get (node.field)
+
+      if not member:
+
+        raise SemanticException (node, f'trying to access a no existing field \'{node.field}\' in type \'{base}\'')
+
+      else:
+
+        node.typeref = member
+
+        return member
+
   @visitor.when (Conditional)
   def visit (self, node: Conditional) -> TypeRef:
 
-    if (self.visit (node.condition) != BOOL_TYPE): # type: ignore
+    if (self.visit (node.condition) != BOOLEAN_TYPE): # type: ignore
 
-      raise SemanticException (node.condition, f'conditional value is not a \'{BOOL_TYPE}\' value')
+      raise SemanticException (node.condition, f'conditional value is not a \'{BOOLEAN_TYPE}\' value')
 
     direct = self.visit (node.direct) # type: ignore
 
@@ -113,7 +142,7 @@ class TypeCheckVisitor:
 
     value: TypeRef
 
-    if isinstance (node.value, bool): value = BOOL_TYPE
+    if isinstance (node.value, bool): value = BOOLEAN_TYPE
     elif isinstance (node.value, float): value = NUMBER_TYPE
     elif isinstance (node.value, str): value = STRING_TYPE
     else: raise Exception (f'can not extract type info from {type (node.value)}')
@@ -152,17 +181,21 @@ class TypeCheckVisitor:
 
       scope.addv (param.name, typeref)
 
-    body = TypeCheckVisitor (scope).visit (node.body) # type: ignore
-    typeref = node.typeref or AnyType ()
+    node.typeref = AnyType () if not node.typeref else self.scope.derive (node.typeref)
 
-    if body != typeref:
+    value = FunctionType (node.name, params, node.typeref)
 
-      raise SemanticException (node, f'can not return a \'{body}\' value from a function with \'{typeref}\' return type')
+    scope.addv (node.name, value)
 
-    typeref = body if isinstance (typeref, AnyType) else typeref
-    value = FunctionType (node.name, params, typeref)
+    body = TypeCheckVisitor (scope).visit (node.body) or AnyType () # type: ignore
 
-    node.typeref = typeref
+    if body != value.typeref:
+
+      raise SemanticException (node, f'can not return a \'{body}\' value from a function with \'{value.typeref}\' return type')
+
+    value.typeref = body if isinstance (value.typeref, AnyType) else value.typeref
+    node.typeref = value.typeref
+
     self.scope.addv (node.name, value)
 
     return value
@@ -171,6 +204,7 @@ class TypeCheckVisitor:
   def visit (self, node: Invoke) -> TypeRef:
 
     arguments = list (map (lambda a: self.visit (a), node.arguments)) # type: ignore
+
     target = TypeCheckVisitor (self.scope, invoker = True).visit (node.target) # type: ignore
 
     if not isinstance (target, FunctionType):
@@ -187,7 +221,7 @@ class TypeCheckVisitor:
 
         if typea != typeb:
 
-          raise SemanticException (node, f'can not assign a \'{typeb}\' value to a \'{typea}\' variable')
+          raise SemanticException (node, f'can not convert a \'{typeb}\' value to a \'{typea}\' type')
 
       raise Exception ('invalid argument types')
 
@@ -208,10 +242,55 @@ class TypeCheckVisitor:
 
     return node.typeref
 
+  @visitor.when (NewValue)
+  def visit (self, node: NewValue) -> TypeRef:
+
+    value = self.scope.gett (node.typeref.name) # type: ignore
+
+    if not value:
+
+      raise SemanticException (node, f'unknown type \'{node.typeref}\'')
+
+    node.typeref = value
+
+    return value
+
   @visitor.when (Param)
   def visit (self, node: Param) -> None | TypeRef:
 
-    return node.typeref
+    return None if not node.typeref else self.scope.derive (node.typeref)
+
+  @visitor.when (ProtocolDecl)
+  def visit (self, node: ProtocolDecl) -> TypeRef:
+
+    scope = self.scope.clone ()
+
+    TypeCheckVisitor (scope, composing = True).visit (node.body) # type: ignore
+
+    diff = scope.diff (self.scope)
+    members = diff.variables.copy ()
+
+    value = ProtocolType (node.name, members)
+
+    node.typeref = value
+    return value
+
+  @visitor.when (TypeDecl)
+  def visit (self, node: TypeDecl) -> TypeRef:
+
+    scope = self.scope.clone ()
+
+    TypeCheckVisitor (scope, composing = True).visit (node.body) # type: ignore
+
+    diff = scope.diff (self.scope)
+    members = diff.variables.copy ()
+
+    value = CompositeType (node.name, members)
+
+    self.scope.addt (node.name, value)
+
+    node.typeref = value
+    return value
 
   @visitor.when (UnaryOperator)
   def visit (self, node: UnaryOperator) -> TypeRef:
@@ -220,11 +299,11 @@ class TypeCheckVisitor:
 
       case '!':
 
-        if self.visit (node.argument) != BOOL_TYPE: # type: ignore
+        if self.visit (node.argument) != BOOLEAN_TYPE: # type: ignore
 
           raise SemanticException (node, f'invalid \'{self.visit (node.operator)}\' for \'{node.operator}\' operator') # type: ignore
 
-        value = BOOL_TYPE
+        value = BOOLEAN_TYPE
 
       case _: value = self.visit (node.argument) # type: ignore
 
@@ -254,9 +333,13 @@ class TypeCheckVisitor:
 
     value = self.visit (node.value) # type: ignore
 
-    if node.typeref != None and node.typeref != value:
+    if node.typeref != None:
 
-      raise SemanticException (node, f'can not assign a \'{value}\' value to a \'{node.typeref}\' variable')
+      node.typeref = self.scope.derive (node.typeref)
+
+      if node.typeref != value:
+
+        raise SemanticException (node, f'can not assign a \'{value}\' value to a \'{node.typeref}\' variable')
 
     node.typeref = value
 

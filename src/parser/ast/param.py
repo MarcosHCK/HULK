@@ -14,9 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
-from .base import TypeRef
-from .base import Value
-from typing import Optional
+from parser.ast.base import TypeRef
+from parser.ast.base import Value
 
 class Param (Value):
 

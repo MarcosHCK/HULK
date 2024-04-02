@@ -14,24 +14,41 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
-from ..ast.base import BOOL_TYPE, DEFAULT_TYPE, DEFAULT_VALUE
-from ..ast.base import BOOLEAN_FALSE, BOOLEAN_TRUE
-from ..ast.base import AstNode
-from .scope import Scope
-from .typecheck import TypeCheckVisitor
+from parser.ast.base import AstNode
+from parser.ast.base import BOOLEAN_FALSE, BOOLEAN_TRUE
+from parser.ast.base import BOOLEAN_TYPE, DEFAULT_TYPE, NUMBER_TYPE
+from parser.ast.base import BOOLEAN_TYPENAME, DEFAULT_VALUE
+from parser.ast.base import DEFAULT_TYPENAME, NUMBER_TYPENAME
+from parser.ast.base import ITERABLE_PROTOCOL
+from parser.semantic.scope import Scope
+from parser.semantic.typecheck import TypeCheckVisitor
+from parser.types import AnyType, FunctionType, ProtocolType
 
 class SemanticChecker:
 
   def __init__(self) -> None:
 
-    pass
+    scope = Scope ()
+
+    iterable = ProtocolType (ITERABLE_PROTOCOL, {
+
+      'current': FunctionType ('current', [], AnyType ()),
+      'next': FunctionType ('next', [], AnyType ()),
+    })
+
+    scope.addt (BOOLEAN_TYPENAME, BOOLEAN_TYPE)
+    scope.addt (DEFAULT_TYPENAME, DEFAULT_TYPE)
+    scope.addt (ITERABLE_PROTOCOL, iterable)
+    scope.addt (NUMBER_TYPENAME, NUMBER_TYPE)
+
+    scope.addv (BOOLEAN_FALSE, BOOLEAN_TYPE)
+    scope.addv (BOOLEAN_TRUE, BOOLEAN_TYPE)
+    scope.addv (DEFAULT_VALUE, DEFAULT_TYPE)
+
+    self.scope = scope
 
   def check (self, node: AstNode):
 
-    scope = Scope ()
-
-    scope.addv (BOOLEAN_FALSE, BOOL_TYPE)
-    scope.addv (BOOLEAN_TRUE, BOOL_TYPE)
-    scope.addv (DEFAULT_VALUE, DEFAULT_TYPE)
+    scope = self.scope.clone ()
 
     TypeCheckVisitor (scope).visit (node) # type: ignore

@@ -14,8 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
-from .base import Value
-from .block import Block
+from parser.ast.base import Value
+from parser.ast.block import Block
 
 class Conditional (Value):
 

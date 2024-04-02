@@ -178,7 +178,10 @@ class PrintVisitor (object):
   @visitor.when (NewValue)
   def visit (self, node: NewValue):
 
-    value = [ f'new {node.type} (' ]
+    value = [ f'new ' ]
+
+    value.extend (self.visit (node.typeref)) # type: ignore
+    value.append (' (')
 
     for i, argument in enumerate (node.arguments):
 

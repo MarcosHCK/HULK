@@ -9,7 +9,29 @@ let b = 9 in {
 
 function printn (n)
 {
-  n * 2;
+  n * 2 + printn (n - 1);
 }
 
 printn ("ds");
+
+protocol Clonable
+{
+  clone (): Clonable;
+}
+
+type Queue () inherits BlaBla ()
+{
+  head: number = 0;
+
+  push (elm: number) => elm;
+  pop () => false;
+
+  current () => 5;
+  next () => true;
+} default;
+
+let a = new Queue () in
+{
+  for (e in a) printn (e);
+  a.push (4);
+};

@@ -14,10 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
-from .types import TypeRef
+from parser.types import TypeRef
 
 BASE_TYPENAME = 'object'
-BOOL_TYPENAME = 'boolean'
+BOOLEAN_TYPENAME = 'boolean'
 DEFAULT_TYPENAME = 'default'
 ITERABLE_PROTOCOL = 'iterable'
 NUMBER_TYPENAME = 'number'
@@ -44,7 +44,7 @@ class Value (AstNode):
     super ().__init__ (**kwargs)
 
 BASE_TYPE = TypeRef (BASE_TYPENAME, False)
-BOOL_TYPE = TypeRef (BOOL_TYPENAME, False)
+BOOLEAN_TYPE = TypeRef (BOOLEAN_TYPENAME, False)
 DEFAULT_TYPE = TypeRef (DEFAULT_TYPENAME, False)
 NUMBER_TYPE = TypeRef (NUMBER_TYPENAME, False)
 STRING_TYPE = TypeRef (STRING_TYPENAME, False)
