@@ -14,22 +14,28 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
-from .base import TypeRef
-from .base import Value
-from typing import Optional
+from mimetypes import init
+from ..ast.base import TypeRef
+from typing import Dict
 
-class Param (Value):
+class Scope:
 
-  def __init__ (self, name: str, typeref: None | TypeRef, **kwargs):
+  def __init__ (self) -> None:
 
-    super ().__init__ (typeref = typeref, **kwargs)
+    self.variables: Dict[str, TypeRef] = { }
 
-    self.name = name
+  def addv (self, name: str, typeref: TypeRef) -> None:
 
-class VarParam (Param):
+    self.variables[name] = typeref
 
-  def __init__ (self, name: str, typeref: None | TypeRef, value: Value, **kwargs):
+  def getv (self, name: str) -> None | TypeRef:
 
-    super ().__init__ (name = name, typeref = typeref, **kwargs)
+    return self.variables.get (name)
 
-    self.value = value
+  def clone (self):
+
+    child = Scope ()
+
+    child.variables = self.variables.copy ()
+
+    return child

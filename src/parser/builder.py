@@ -21,7 +21,7 @@ from .ast.base import TypeRef, Value
 from .ast.block import Block
 from .ast.conditional import Conditional
 from .ast.decl import FunctionDecl, ProtocolDecl, TypeDecl
-from .ast.indirection import ClassAccess, VectorAccess
+from .ast.indirection import ClassAccess
 from .ast.invoke import Invoke
 from .ast.let import Let
 from .ast.loops import While

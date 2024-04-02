@@ -14,22 +14,24 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
-from .base import TypeRef
-from .base import Value
-from typing import Optional
+from ..ast.base import BOOL_TYPE, DEFAULT_TYPE, DEFAULT_VALUE
+from ..ast.base import BOOLEAN_FALSE, BOOLEAN_TRUE
+from ..ast.base import AstNode
+from .scope import Scope
+from .typecheck import TypeCheckVisitor
 
-class Param (Value):
+class SemanticChecker:
 
-  def __init__ (self, name: str, typeref: None | TypeRef, **kwargs):
+  def __init__(self) -> None:
 
-    super ().__init__ (typeref = typeref, **kwargs)
+    pass
 
-    self.name = name
+  def check (self, node: AstNode):
 
-class VarParam (Param):
+    scope = Scope ()
 
-  def __init__ (self, name: str, typeref: None | TypeRef, value: Value, **kwargs):
+    scope.addv (BOOLEAN_FALSE, BOOL_TYPE)
+    scope.addv (BOOLEAN_TRUE, BOOL_TYPE)
+    scope.addv (DEFAULT_VALUE, DEFAULT_TYPE)
 
-    super ().__init__ (name = name, typeref = typeref, **kwargs)
-
-    self.value = value
+    TypeCheckVisitor (scope).visit (node) # type: ignore

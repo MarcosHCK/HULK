@@ -14,19 +14,28 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
-from typing import Any
+from .types import TypeRef
 
-BASE_TYPE = 'Object'
-ITERABLE_PROTOCOL = 'Iterable'
+BASE_TYPENAME = 'object'
+BOOL_TYPENAME = 'boolean'
+DEFAULT_TYPENAME = 'default'
+ITERABLE_PROTOCOL = 'iterable'
+NUMBER_TYPENAME = 'number'
+STRING_TYPENAME = 'string'
+
+BOOLEAN_FALSE = 'false'
+BOOLEAN_TRUE = 'true'
+DEFAULT_VALUE = 'default'
 
 class AstNode:
 
-  def __init__ (self, line: int = 0, column: int = 0, **kwargs):
+  def __init__ (self, line: int = 0, column: int = 0, typeref: TypeRef | None = None, **kwargs):
 
     super ().__init__ ()
 
     self.line = line
     self.column = column
+    self.typeref = typeref
 
 class Value (AstNode):
 
@@ -34,11 +43,8 @@ class Value (AstNode):
 
     super ().__init__ (**kwargs)
 
-class TypeRef (AstNode):
-
-  def __init__ (self, name: str, vector: bool, **kwargs):
-
-    super ().__init__ (**kwargs)
-
-    self.name = name
-    self.vector = vector
+BASE_TYPE = TypeRef (BASE_TYPENAME, False)
+BOOL_TYPE = TypeRef (BOOL_TYPENAME, False)
+DEFAULT_TYPE = TypeRef (DEFAULT_TYPENAME, False)
+NUMBER_TYPE = TypeRef (NUMBER_TYPENAME, False)
+STRING_TYPE = TypeRef (STRING_TYPENAME, False)

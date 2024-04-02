@@ -20,6 +20,8 @@ from parser.printvisitor import PrintVisitor
 from typing import Iterable
 import argparse
 
+from parser.semantic.checker import SemanticChecker
+
 def ignore (source: Iterable[Token]):
 
   lastline = 1
@@ -33,7 +35,7 @@ def ignore (source: Iterable[Token]):
       lastline = token.line
       yield token
 
-  yield Token (lastcolumn + 1, lastline, 'EOF', None)
+  yield Token (lastcolumn + 1, lastline, 'EOF', None) # type: ignore
 
 def program ():
 
@@ -49,7 +51,10 @@ def program ():
 
       lines = stream.readlines ()
       tokens = ignore (Lexer (lines)) 
+      ast = Parser (tokens)
 
-      print ('\n'.join (PrintVisitor ().visit (Parser (tokens))))
+      SemanticChecker ().check (ast)
+
+      print ('\n'.join (PrintVisitor ().visit (ast)))
 
 program ()

@@ -14,22 +14,18 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
-from .base import TypeRef
-from .base import Value
-from typing import Optional
+from ..ast.base import AstNode
 
-class Param (Value):
+class SemanticException (Exception):
 
-  def __init__ (self, name: str, typeref: None | TypeRef, **kwargs):
+  def __init__ (self, base: AstNode, message: str, *args: object) -> None:
 
-    super ().__init__ (typeref = typeref, **kwargs)
+    super ().__init__ (*args)
 
-    self.name = name
+    self.column = base.column
+    self.line = base.line
+    self.message = message
 
-class VarParam (Param):
+  def __str__ (self) -> str:
 
-  def __init__ (self, name: str, typeref: None | TypeRef, value: Value, **kwargs):
-
-    super ().__init__ (name = name, typeref = typeref, **kwargs)
-
-    self.value = value
+    return f'{self.line}: {self.column}: {self.message}'

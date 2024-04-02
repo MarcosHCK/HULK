@@ -51,8 +51,10 @@ class StringValue (Constant):
 
     super ().__init__ (value [1:-1], **kwargs)
 
-class VariableValue (Constant):
+class VariableValue (Value):
 
-  def __init__ (self, value: str, **kwargs):
+  def __init__ (self, name: str, **kwargs):
 
-    super ().__init__ (value, **kwargs)
+    super ().__init__ (**kwargs)
+
+    self.name = name

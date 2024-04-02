@@ -1,29 +1,15 @@
-type Point (x, y)
-{
-  x: Number = x;
-  y: Number = y;
+if (! 8 == 9) 3 else 6 + 7;
 
-  getx () => self.x;
-  gety () => self.y;
+while (4 == 5) 7 + 4;
 
-  setx (x: Number) => self.x := x;
-  sety (y: Number) => self.y := y;
-}
+let b = 9 in {
 
-function printp (point: Point)
-{
-  print ("(" @ point.getx () @ "," @ point.gety () @ ")");
-}
-
-let p = new Point (4, 6) in
-{
-  printp (p);
-
-  print (p.setx (7));
-  printp (p);
+  let a = 5 in b + a;
 };
 
-for (x in range (0, 10))
+function printn (n)
 {
-  print (x);
-};
+  n * 2;
+}
+
+printn ("ds");

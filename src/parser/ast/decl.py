@@ -25,12 +25,11 @@ class FunctionDecl (AstNode):
 
   def __init__ (self, name: str, params: List[Param], typeref: TypeRef, body: Block, **kwargs):
 
-    super ().__init__ (**kwargs)
+    super ().__init__ (typeref = typeref, **kwargs)
 
     self.body = body
     self.name = name
     self.params = params
-    self.typeref = typeref
 
 class ProtocolDecl (AstNode):
 

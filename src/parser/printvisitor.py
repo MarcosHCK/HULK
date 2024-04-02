@@ -26,13 +26,13 @@ from .ast.let import Let
 from .ast.loops import While
 from .ast.operator import BinaryOperator, UnaryOperator
 from .ast.param import Param, VarParam
-from .ast.value import NewValue
+from .ast.value import NewValue, VariableValue
 import utils.visitor as visitor
 
 class PrintVisitor (object):
 
   @visitor.on ('node')
-  def visit (self, node):
+  def visit (self, node: object):
 
     pass
 
@@ -41,10 +41,10 @@ class PrintVisitor (object):
 
     oper = [ ]
 
-    oper.extend (self.visit (node.argument))
+    oper.extend (self.visit (node.argument)) # type: ignore
     oper.append (f' {node.operator} ')
 
-    oper.extend (self.visit (node.argument2))
+    oper.extend (self.visit (node.argument2)) # type: ignore
 
     return [ ''.join (oper) ]
 
@@ -55,7 +55,7 @@ class PrintVisitor (object):
 
     for stmt in node.stmts:
 
-      lines.extend (self.visit (stmt))
+      lines.extend (self.visit (stmt)) # type: ignore
 
     return lines
 
@@ -64,7 +64,7 @@ class PrintVisitor (object):
 
     access = [ ]
 
-    access.extend (self.visit (node.base))
+    access.extend (self.visit (node.base)) # type: ignore
     access.append (f'.{node.field}')
 
     return [ ''.join (access) ]
@@ -79,15 +79,15 @@ class PrintVisitor (object):
 
     if_ = [ 'if (' ]
 
-    if_.extend (self.visit (node.condition))
+    if_.extend (self.visit (node.condition)) # type: ignore
     if_.append (') {')
 
     if_ = [ ''.join (if_) ]
 
-    if_.extend (list (map (lambda a: f'  {a}', self.visit (node.direct))))
+    if_.extend (list (map (lambda a: f'  {a}', self.visit (node.direct)))) # type: ignore
     if_.append ('} else {')
 
-    if_.extend (list (map (lambda a: f'  {a}', self.visit (node.reverse))))
+    if_.extend (list (map (lambda a: f'  {a}', self.visit (node.reverse)))) # type: ignore
     if_.append ('}')
 
     return if_
@@ -97,10 +97,10 @@ class PrintVisitor (object):
 
     assigment = [ ]
 
-    assigment.extend (self.visit (node.over))
+    assigment.extend (self.visit (node.over)) # type: ignore
     assigment.append (' := ')
 
-    assigment.extend (self.visit (node.value))
+    assigment.extend (self.visit (node.value)) # type: ignore
 
     return [ ''.join (assigment) ]
 
@@ -115,20 +115,20 @@ class PrintVisitor (object):
 
         function.append (', ')
 
-      function.extend (self.visit (param))
+      function.extend (self.visit (param)) # type: ignore
 
     function.append (')')
 
     if (node.typeref):
 
       function.append (': ')
-      function.extend (self.visit (node.typeref))
+      function.extend (self.visit (node.typeref)) # type: ignore
 
     function.append (' {')
 
     function = [ ''.join (function) ]
 
-    function.extend (list (map (lambda a: f'  {a}', self.visit (node.body))))
+    function.extend (list (map (lambda a: f'  {a}', self.visit (node.body)))) # type: ignore
     function.append ('}')
 
     return function
@@ -138,7 +138,7 @@ class PrintVisitor (object):
 
     invoke = [ ]
 
-    invoke.extend (self.visit (node.target))
+    invoke.extend (self.visit (node.target)) # type: ignore
     invoke.append (' (')
 
     for i, argument in enumerate (node.arguments):
@@ -147,7 +147,7 @@ class PrintVisitor (object):
 
         invoke.append (', ')
 
-      invoke.extend (self.visit (argument))
+      invoke.extend (self.visit (argument)) # type: ignore
 
     invoke.append (')')
 
@@ -164,13 +164,13 @@ class PrintVisitor (object):
 
         let.append (', ')
 
-      let.extend (self.visit (param))
+      let.extend (self.visit (param)) # type: ignore
 
     let.append (' in {')
 
     let = [ ''.join (let) ]
 
-    let.extend (list (map (lambda a: f'  {a}', self.visit (node.body))))
+    let.extend (list (map (lambda a: f'  {a}', self.visit (node.body)))) # type: ignore
     let.append ('}')
 
     return let
@@ -186,7 +186,7 @@ class PrintVisitor (object):
 
         value.append (', ')
 
-      value.extend (self.visit (argument))
+      value.extend (self.visit (argument)) # type: ignore
 
     value.append (')')
 
@@ -200,7 +200,7 @@ class PrintVisitor (object):
     if node.typeref:
 
       param.append (': ')
-      param.extend (self.visit (node.typeref))
+      param.extend (self.visit (node.typeref)) # type: ignore
 
     return [ ''.join (param) ]
 
@@ -217,7 +217,7 @@ class PrintVisitor (object):
 
     protocol = [ ''.join (protocol) ]
 
-    protocol.extend (list (map (lambda a: f'  {a}', self.visit (node.body))))
+    protocol.extend (list (map (lambda a: f'  {a}', self.visit (node.body)))) # type: ignore
     protocol.append ('}')
 
     return protocol
@@ -235,7 +235,7 @@ class PrintVisitor (object):
 
         type_.append (', ')
 
-      type_.extend (self.visit (param))
+      type_.extend (self.visit (param)) # type: ignore
 
     type_.append (')')
 
@@ -249,7 +249,7 @@ class PrintVisitor (object):
   
           type_.append (', ')
   
-        type_.extend (self.visit (value))
+        type_.extend (self.visit (value)) # type: ignore
 
       type_.append (')')
 
@@ -257,7 +257,7 @@ class PrintVisitor (object):
 
     type_ = [ ''.join (type_) ]
 
-    type_.extend (list (map (lambda a: f'  {a}', self.visit (node.body))))
+    type_.extend (list (map (lambda a: f'  {a}', self.visit (node.body)))) # type: ignore
     type_.append ('}')
 
     return type_
@@ -279,9 +279,14 @@ class PrintVisitor (object):
     oper = [ ]
 
     oper.append (f'{node.operator} ')
-    oper.extend (self.visit (node.argument))
+    oper.extend (self.visit (node.argument)) # type: ignore
 
     return [ ''.join (oper) ]
+
+  @visitor.when (VariableValue)
+  def visit (self, node: VariableValue):
+
+    return [ node.name ]
 
   @visitor.when (VarParam)
   def visit (self, node: VarParam):
@@ -290,10 +295,10 @@ class PrintVisitor (object):
 
     param = Param (node.name, node.typeref)
 
-    varparam.extend (self.visit (param))
+    varparam.extend (self.visit (param)) # type: ignore
     varparam.append (' = ')
 
-    varparam.extend (self.visit (node.value))
+    varparam.extend (self.visit (node.value)) # type: ignore
 
     return [ ''.join (varparam) ]
 
@@ -302,12 +307,12 @@ class PrintVisitor (object):
 
     while_ = [ 'while (' ]
 
-    while_.extend (self.visit (node.condition))
+    while_.extend (self.visit (node.condition)) # type: ignore
     while_.append (') {')
 
     while_ = [ ''.join (while_) ]
 
-    while_.extend (list (map (lambda a: f'  {a}', self.visit (node.direct))))
+    while_.extend (list (map (lambda a: f'  {a}', self.visit (node.direct)))) # type: ignore
     while_.append ('}')
 
     return while_

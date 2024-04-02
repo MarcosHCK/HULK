@@ -197,8 +197,11 @@ disjuntive = conjuntive
 conjuntive = (conjuntive + '&' + coerced)                                         / builder ('build_binary_operator')
 conjuntive = coerced
 
-coerced = (coerced + (literal 'as' * 'is') + boolean)                             / builder ('build_binary_operator')
+coerced = (boolean + (literal 'as' * 'is') + coercer)                             / builder ('build_binary_operator')
 coerced = boolean
+
+coercer = (IDENTIFIER + '[' + ']')                                                / builder ('build_typeref', 0, true)
+coercer = IDENTIFIER                                                              / builder ('build_typeref', 0, false)
 
 boolean = (boolean + (literal '<' * '>' * '<=' * '>=' * '==' * '!=') + concated)  / builder ('build_binary_operator')
 boolean = concated
