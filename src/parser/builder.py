@@ -28,7 +28,7 @@ from parser.ast.loops import While
 from parser.ast.operator import BinaryOperator, UnaryOperator
 from parser.ast.param import Param, VarParam
 from parser.ast.value import BooleanValue, NewValue, NumberValue, StringValue, VariableValue
-from parser.types import TypeRef
+from parser.types import CTOR_NAME, AnyType, TypeRef
 from lexer.lexer import Token
 from typing import Any, List, Tuple
 
@@ -199,11 +199,17 @@ def build_typedecl (args: Tuple, first: Token, nameat: int = 0, paramsat: int = 
 
   body: Block = getat (args, bodyat)
   name: str = getvat (args, nameat)
-  params: List[Param] = getat (args, paramsat, [ ])
+  params: List[Param] = getat (args, paramsat)
   parent: str = getvat (args, parentat, BASE_TYPE)
-  parentctor: List[Value] = getat (args, parentctorat, [ ])
+  parentctor: List[Value] = getat (args, parentctorat)
 
-  return TypeDecl (name, params, parent, parentctor, body, **annot (first))
+  ctorb = Block ([ Invoke (ClassAccess (VariableValue ('self'), CTOR_NAME), parentctor or [ ]) ])
+  ctor = FunctionDecl (CTOR_NAME, params or [ ], None, ctorb)
+
+  body = Block ([ ctor, *body.stmts ]) # type: ignore
+  decl = TypeDecl (name, parent, body, **annot (first))
+
+  return decl
 
 def build_typeref (args: Tuple, first: Token, nameat: int = 0, vector: bool = False):
 

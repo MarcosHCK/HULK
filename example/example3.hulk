@@ -19,12 +19,14 @@ protocol Clonable
   clone (): Clonable;
 }
 
-type Queue () inherits BlaBla ()
+type Queue (a) inherits object (a)
 {
   head: number = 0;
 
   push (elm: number) => elm;
   pop () => false;
+
+  reverse (h) => self.head := h;
 
   current () => 5;
   next () => true;

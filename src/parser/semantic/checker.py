@@ -15,6 +15,7 @@
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
 from parser.ast.base import AstNode
+from parser.ast.base import BASE_TYPE, BASE_TYPENAME
 from parser.ast.base import BOOLEAN_FALSE, BOOLEAN_TRUE
 from parser.ast.base import BOOLEAN_TYPE, DEFAULT_TYPE, NUMBER_TYPE
 from parser.ast.base import BOOLEAN_TYPENAME, DEFAULT_VALUE
@@ -22,7 +23,7 @@ from parser.ast.base import DEFAULT_TYPENAME, NUMBER_TYPENAME
 from parser.ast.base import ITERABLE_PROTOCOL
 from parser.semantic.scope import Scope
 from parser.semantic.typecheck import TypeCheckVisitor
-from parser.types import AnyType, FunctionType, ProtocolType
+from parser.types import AnyType, FunctionType, ProtocolType, SelfType
 
 class SemanticChecker:
 
@@ -32,10 +33,11 @@ class SemanticChecker:
 
     iterable = ProtocolType (ITERABLE_PROTOCOL, {
 
-      'current': FunctionType ('current', [], AnyType ()),
-      'next': FunctionType ('next', [], AnyType ()),
+      'current': FunctionType ('current', [ SelfType () ], AnyType ()),
+      'next': FunctionType ('next', [ SelfType () ], AnyType ()),
     })
 
+    scope.addt (BASE_TYPENAME, BASE_TYPE)
     scope.addt (BOOLEAN_TYPENAME, BOOLEAN_TYPE)
     scope.addt (DEFAULT_TYPENAME, DEFAULT_TYPE)
     scope.addt (ITERABLE_PROTOCOL, iterable)

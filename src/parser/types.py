@@ -14,8 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
-from cgi import print_arguments
-from typing import Dict, List
+from typing import Any, Dict, List, Self
+
+CTOR_NAME = "@ctor"
 
 class TypeRef:
 
@@ -85,11 +86,26 @@ class CompositeType (TypeRef):
 
       return super ().__eq__ (__value) and self.members == __value.members
 
-  def __init__ (self, name: str, members: Dict[str, TypeRef], **kwargs):
+  def __init__ (self, name: str, members: Dict[str, TypeRef], parent: None | Self = None, **kwargs):
 
     super ().__init__ (name = name, vector = kwargs.get ('vector', False))
 
     self.members = members
+    self.parent = parent
+
+  def get_ctor (self) -> None | TypeRef:
+
+    pass
+
+  def get_member (self, name: str, default: Any = None) -> None | TypeRef:
+
+    local = self.members.get (name)
+
+    if not local and self.parent != None:
+
+      local = self.parent.get_member (name)
+
+    return local or default
 
 class FunctionType (TypeRef):
 
@@ -138,9 +154,7 @@ class ProtocolType (CompositeType):
 
       for name, member in self.members.items ():
 
-        other = __value.members.get (name)
-
-        print (other, member, other == None, other != member)
+        other = __value.get_member (name)
 
         if other == None or other != member:
 
@@ -148,6 +162,16 @@ class ProtocolType (CompositeType):
 
       return True
 
-  def __init__ (self, name: str, members: Dict[str, TypeRef], **kwargs):
+  def __init__ (self, name: str, members: Dict[str, TypeRef], parent: None | Self = None, **kwargs):
 
-    super ().__init__ (name = name, members = members, vector = kwargs.get ('vector', False))
+    super ().__init__ (name = name, members = members, parent = parent, vector = kwargs.get ('vector', False))
+
+class SelfType (TypeRef):
+
+  def __eq__(self, __value: object) -> bool:
+
+    return isinstance (__value, SelfType)
+
+  def __init__(self, **kwargs):
+
+    super ().__init__ (name = 'self', vector = False, **kwargs)

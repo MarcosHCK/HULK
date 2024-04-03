@@ -23,7 +23,7 @@ from typing import List
 
 class FunctionDecl (AstNode):
 
-  def __init__ (self, name: str, params: List[Param], typeref: TypeRef, body: Block, **kwargs):
+  def __init__ (self, name: str, params: List[Param], typeref: None | TypeRef, body: Block, **kwargs):
 
     super ().__init__ (typeref = typeref, **kwargs)
 
@@ -43,12 +43,10 @@ class ProtocolDecl (AstNode):
 
 class TypeDecl (AstNode):
 
-  def __init__ (self, name: str, params: List[Param], parent: str, parentctor: List[Value], body: Block, **kwargs):
+  def __init__ (self, name: str, parent: str, body: Block, **kwargs):
 
     super ().__init__ (**kwargs)
 
     self.body = body
     self.name = name
-    self.params = params
     self.parent = parent
-    self.parentctor = parentctor

@@ -230,31 +230,9 @@ class PrintVisitor (object):
 
     type_ = [ f'type {node.name}' ]
 
-    type_.append (' (')
-
-    for i, param in enumerate (node.params):
-
-      if i > 0:
-
-        type_.append (', ')
-
-      type_.extend (self.visit (param)) # type: ignore
-
-    type_.append (')')
-
     if node.parent:
 
-      type_.append (f' inherits {node.parent} (')
-
-      for i, value in enumerate (node.parentctor):
-
-        if i > 0:
-  
-          type_.append (', ')
-  
-        type_.extend (self.visit (value)) # type: ignore
-
-      type_.append (')')
+      type_.append (f' inherits {node.parent}')
 
     type_.append (' {')
 

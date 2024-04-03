@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
-from parser.types import TypeRef
+from parser.types import CompositeType, TypeRef
 
 BASE_TYPENAME = 'object'
 BOOLEAN_TYPENAME = 'boolean'
@@ -43,7 +43,7 @@ class Value (AstNode):
 
     super ().__init__ (**kwargs)
 
-BASE_TYPE = TypeRef (BASE_TYPENAME, False)
+BASE_TYPE = CompositeType (BASE_TYPENAME, { })
 BOOLEAN_TYPE = TypeRef (BOOLEAN_TYPENAME, False)
 DEFAULT_TYPE = TypeRef (DEFAULT_TYPENAME, False)
 NUMBER_TYPE = TypeRef (NUMBER_TYPENAME, False)

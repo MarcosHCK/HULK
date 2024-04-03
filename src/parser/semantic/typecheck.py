@@ -29,7 +29,7 @@ from parser.ast.param import Param, VarParam
 from parser.ast.value import NewValue, VariableValue
 from parser.semantic.exception import SemanticException
 from parser.semantic.scope import Scope
-from parser.types import AnyType, CompositeType, FunctionType, ProtocolType, TypeRef
+from parser.types import AnyType, CompositeType, FunctionType, ProtocolType, SelfType, TypeRef
 import utils.visitor as visitor
 
 class TypeCheckVisitor:
@@ -105,7 +105,7 @@ class TypeCheckVisitor:
 
     else:
 
-      member = base.members.get (node.field)
+      member = base.get_member (node.field)
 
       if not member:
 
@@ -171,6 +171,12 @@ class TypeCheckVisitor:
     scope = self.scope.clone ()
     params = [ ]
 
+    if self.composing:
+
+      params.append (SelfType ())
+
+      scope.addv ('self', SelfType ())
+
     for param in node.params:
 
       typeref = self.visit (param) # type: ignore
@@ -211,7 +217,11 @@ class TypeCheckVisitor:
 
       raise SemanticException (node, f'attempt to call a \'{target}\' value')
 
-    elif len (target.params) != len (arguments):
+    elif isinstance (target.params [0], SelfType):
+
+      arguments.insert (0, target.params [0])
+
+    if len (target.params) != len (arguments):
 
       raise SemanticException (node, f'{target.name} function requires {len (target.params)}, {len (arguments)} were given')
 
@@ -251,6 +261,14 @@ class TypeCheckVisitor:
 
       raise SemanticException (node, f'unknown type \'{node.typeref}\'')
 
+    elif value != node.typeref:
+
+      raise SemanticException (node, f'composite types array can not be instanciate')
+
+    elif isinstance (value, ProtocolType):
+
+      raise SemanticException (node, f'can not instanciate a \'{value}\' protocol')
+
     node.typeref = value
 
     return value
@@ -258,34 +276,42 @@ class TypeCheckVisitor:
   @visitor.when (Param)
   def visit (self, node: Param) -> None | TypeRef:
 
-    return None if not node.typeref else self.scope.derive (node.typeref)
+    node.typeref = None if not node.typeref else self.scope.derive (node.typeref)
 
-  @visitor.when (ProtocolDecl)
-  def visit (self, node: ProtocolDecl) -> TypeRef:
-
-    scope = self.scope.clone ()
-
-    TypeCheckVisitor (scope, composing = True).visit (node.body) # type: ignore
-
-    diff = scope.diff (self.scope)
-    members = diff.variables.copy ()
-
-    value = ProtocolType (node.name, members)
-
-    node.typeref = value
-    return value
+    return node.typeref
 
   @visitor.when (TypeDecl)
   def visit (self, node: TypeDecl) -> TypeRef:
 
     scope = self.scope.clone ()
 
+    parent = self.scope.gett (node.parent)
+
+    if not parent:
+
+      raise SemanticException (node, f'unknown type \'{node.parent}\'')
+
+    elif isinstance (node, ProtocolDecl) and not isinstance (parent, ProtocolType):
+
+      raise SemanticException (node, f'protocol can not extend a \'{parent}\' type')
+
+    elif isinstance (node, TypeDecl) and not isinstance (parent, CompositeType):
+
+      raise SemanticException (node, f'type can not inherit from a \'{parent}\' type')
+
     TypeCheckVisitor (scope, composing = True).visit (node.body) # type: ignore
 
     diff = scope.diff (self.scope)
+
     members = diff.variables.copy ()
 
-    value = CompositeType (node.name, members)
+    if isinstance (node, ProtocolDecl):
+
+      value = ProtocolType (node.name, members, parent) # type: ignore
+
+    else:
+
+      value = CompositeType (node.name, members, parent) # type: ignore
 
     self.scope.addt (node.name, value)
 

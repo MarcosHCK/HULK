@@ -53,8 +53,8 @@ def program ():
       tokens = ignore (Lexer (lines)) 
       ast = Parser (tokens)
 
+      print ('\n'.join (PrintVisitor ().visit (ast)))
       SemanticChecker ().check (ast)
 
-      print ('\n'.join (PrintVisitor ().visit (ast)))
 
 program ()
