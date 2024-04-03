@@ -30,7 +30,7 @@ type Queue (a) inherits object
 
   current () => 5;
   next () => true;
-} default;
+}
 
 type SQueue (a, b) inherits Queue (a * 2)
 {

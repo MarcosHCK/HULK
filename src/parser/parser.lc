@@ -218,6 +218,11 @@ term = factor
 factor = (power + (literal '^') + factor)                                         / builder ('build_binary_operator')
 factor = power
 
+power = if_
+power = while_
+power = for_
+power = let
+
 power = BOOLEAN_VALUE                                                             / builder ('build_boolean_value')
 power = NUMBER_VALUE                                                              / builder ('build_number_value')
 power = STRING_VALUE                                                              / builder ('build_string_value')
@@ -228,11 +233,6 @@ power = variable
 power = parenthized
 
 power = dtor_assign
-
-power = if_
-power = while_
-power = for_
-power = let
 
 power = newvalue
 
