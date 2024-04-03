@@ -15,7 +15,6 @@
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
 from parser.ast.assignment import DestructiveAssignment
-from parser.ast.base import BOOLEAN_TYPE, NUMBER_TYPE, STRING_TYPE
 from parser.ast.block import Block
 from parser.ast.conditional import Conditional
 from parser.ast.constant import Constant
@@ -27,17 +26,19 @@ from parser.ast.loops import While
 from parser.ast.operator import BinaryOperator, UnaryOperator
 from parser.ast.param import Param, VarParam
 from parser.ast.value import NewValue, VariableValue
+from parser.semantic.collector import CollectorVisitor
 from parser.semantic.exception import SemanticException
 from parser.semantic.scope import Scope
-from parser.types import AnyType, CompositeType, FunctionType, ProtocolType, SelfType, TypeRef
+from parser.types import AnyType, CompositeType, FunctionType, ProtocolType, TypeRef
+from parser.types import compare_types
+from parser.types import BOOLEAN_TYPE, NUMBER_TYPE, STRING_TYPE
 import utils.visitor as visitor
 
-class TypeCheckVisitor:
+class TypingVisitor:
 
-  def __init__ (self, scope: Scope, composing: bool = False, invoker: bool = False) -> None:
+  def __init__ (self, scope: Scope, compose: None | CompositeType = None) -> None:
 
-    self.composing = composing
-    self.invoker = invoker
+    self.compose = compose
     self.scope = scope
 
   @visitor.on ('node')
@@ -62,7 +63,7 @@ class TypeCheckVisitor:
         arg1 = self.visit (node.argument) # type: ignore
         arg2 = self.visit (node.argument2) # type: ignore
 
-        if (arg1 != arg2):
+        if not compare_types (arg1, arg2):
 
           raise SemanticException (node, f'incompatible types \'{arg1}\' and \'{arg2}\' for \'{node.operator}\' operator')
 
@@ -72,8 +73,6 @@ class TypeCheckVisitor:
 
             case '==' | '!=' | '>=' | '<=' | '>' | '<': value = BOOLEAN_TYPE
             case _: value = (arg2 if isinstance (arg1, AnyType) else arg1)
-
-    node.typeref = value
 
     return value
 
@@ -85,12 +84,6 @@ class TypeCheckVisitor:
     for stmt in node.stmts:
 
       value = self.visit (stmt) # type: ignore
-
-      if self.composing and isinstance (stmt, Param):
-
-        self.scope.addv (stmt.name, value)
-
-    node.typeref = value
 
     return value
 
@@ -113,8 +106,6 @@ class TypeCheckVisitor:
 
       else:
 
-        node.typeref = member
-
         return member
 
   @visitor.when (Conditional)
@@ -130,11 +121,10 @@ class TypeCheckVisitor:
 
       reverse = self.visit (node.reverse) # type: ignore
 
-      if direct != reverse:
+      if not compare_types (direct, reverse):
 
         raise SemanticException (node.reverse, f'branch value type \'{reverse}\' differs from conditional type \'{direct}\'')
 
-    node.typeref = direct
     return direct
 
   @visitor.when (Constant)
@@ -147,8 +137,6 @@ class TypeCheckVisitor:
     elif isinstance (node.value, str): value = STRING_TYPE
     else: raise Exception (f'can not extract type info from {type (node.value)}')
 
-    node.typeref = value
-
     return value
 
   @visitor.when (DestructiveAssignment)
@@ -157,52 +145,50 @@ class TypeCheckVisitor:
     over = self.visit (node.over) # type: ignore
     value = self.visit (node.value) # type: ignore
 
-    if (over != value): # type: ignore
+    if not compare_types (over, value): # type: ignore
 
       raise SemanticException (node.over, f'can not assign a \'{value}\' value to a \'{self.visit (node.over)}\' variable') # type: ignore
 
-    node.typeref = over if isinstance (value, AnyType) else value
-
-    return node.typeref
+    return over if isinstance (value, AnyType) else value
 
   @visitor.when (FunctionDecl)
   def visit (self, node: FunctionDecl) -> TypeRef:
 
-    scope = self.scope.clone ()
-    params = [ ]
+    params = []
+    scope: Scope = self.scope.clone ()
+    value: FunctionType = self.scope.getv (node.name) # type: ignore
 
-    if self.composing:
+    if self.compose != None:
 
-      params.append (SelfType ())
+      scope.addv ('self', self.compose)
 
-      scope.addv ('self', SelfType ())
+      if self.compose.parent != None:
 
-    for param in node.params:
+        scope.addv ('base', self.compose.parent)
 
-      typeref = self.visit (param) # type: ignore
-      typeref = typeref or AnyType ()
+    for param in value.params:
 
-      param.typeref = typeref
-      params.append (param.typeref)
+      params.append (scope.derive (param))
 
-      scope.addv (param.name, typeref)
+    for i, param in enumerate (params):
 
-    node.typeref = AnyType () if not node.typeref else self.scope.derive (node.typeref)
+      node.params [i].typeref = params [i]
+      value.params [i] = params [i]
 
-    value = FunctionType (node.name, params, node.typeref)
+      scope.addv (node.params [i].name, params [i])
 
-    scope.addv (node.name, value)
+    ref = scope.derive (value.typeref)
 
-    body = TypeCheckVisitor (scope).visit (node.body) or AnyType () # type: ignore
+    body = TypingVisitor (scope).visit (node.body) or AnyType () # type: ignore
 
-    if body != value.typeref:
+    if not compare_types (body, value.typeref):
 
       raise SemanticException (node, f'can not return a \'{body}\' value from a function with \'{value.typeref}\' return type')
 
-    value.typeref = body if isinstance (value.typeref, AnyType) else value.typeref
-    node.typeref = value.typeref
+    ref = value.typeref if isinstance (body, AnyType) else body
 
-    self.scope.addv (node.name, value)
+    value.typeref = ref
+    node.typeref = ref
 
     return value
 
@@ -211,57 +197,52 @@ class TypeCheckVisitor:
 
     arguments = list (map (lambda a: self.visit (a), node.arguments)) # type: ignore
 
-    target = TypeCheckVisitor (self.scope, invoker = True).visit (node.target) # type: ignore
+    target = TypingVisitor (self.scope).visit (node.target) # type: ignore
 
     if not isinstance (target, FunctionType):
 
       raise SemanticException (node, f'attempt to call a \'{target}\' value')
 
-    elif isinstance (target.params [0], SelfType):
-
-      arguments.insert (0, target.params [0])
-
     if len (target.params) != len (arguments):
 
       raise SemanticException (node, f'{target.name} function requires {len (target.params)}, {len (arguments)} were given')
 
-    elif target.params != arguments:
+    elif any ([ not compare_types (a, b) for a, b in zip (arguments, target.params) ]):
 
       for typea, typeb in zip (arguments, target.params):
 
-        if typea != typeb:
+        if not compare_types (typea, typeb):
 
           raise SemanticException (node, f'can not convert a \'{typeb}\' value to a \'{typea}\' type')
 
       raise Exception ('invalid argument types')
 
-    node.typeref = target.typeref
-
-    return node.typeref
+    return target.typeref
 
   @visitor.when (Let)
   def visit (self, node: Let) -> TypeRef:
 
     scope = self.scope.clone ()
+    collector = CollectorVisitor (scope)
+    typing = TypingVisitor (scope)
 
     for param in node.params:
 
-      scope.addv (param.name, self.visit (param)) # type: ignore
+      param.typeref = collector.visit (param) # type: ignore
+      param.typeref = typing.visit (param) # type: ignore
 
-    node.typeref = TypeCheckVisitor (scope).visit (node.body) # type: ignore
-
-    return node.typeref
+    return typing.visit (node.body) # type: ignore
 
   @visitor.when (NewValue)
   def visit (self, node: NewValue) -> TypeRef:
 
-    value = self.scope.gett (node.typeref.name) # type: ignore
+    value = self.scope.derive (node.typeref) # type: ignore
 
     if not value:
 
       raise SemanticException (node, f'unknown type \'{node.typeref}\'')
 
-    elif value != node.typeref:
+    elif not compare_types (value, node.typeref):
 
       raise SemanticException (node, f'composite types array can not be instanciate')
 
@@ -276,7 +257,18 @@ class TypeCheckVisitor:
   @visitor.when (Param)
   def visit (self, node: Param) -> None | TypeRef:
 
-    node.typeref = None if not node.typeref else self.scope.derive (node.typeref)
+    node.typeref = self.scope.getv (node.name)
+    node.typeref = self.scope.derive (node.typeref or AnyType ())
+
+    if isinstance (node, VarParam):
+
+      value = self.visit (node.value) # type: ignore
+
+      if not compare_types (value, node.typeref):
+
+        raise SemanticException (node, f'can not assign a \'{value}\' value to a \'{node.typeref}\' variable')
+
+      node.typeref = value if not isinstance (value, AnyType) else node.typeref
 
     return node.typeref
 
@@ -284,8 +276,8 @@ class TypeCheckVisitor:
   def visit (self, node: TypeDecl) -> TypeRef:
 
     scope = self.scope.clone ()
-
-    parent = self.scope.gett (node.parent)
+    value: CompositeType = self.scope.gett (node.name) # type: ignore
+    parent: CompositeType = self.scope.gett (node.parent) # type: ignore
 
     if not parent:
 
@@ -299,23 +291,14 @@ class TypeCheckVisitor:
 
       raise SemanticException (node, f'type can not inherit from a \'{parent}\' type')
 
-    TypeCheckVisitor (scope, composing = True).visit (node.body) # type: ignore
+    value.parent = parent
 
-    diff = scope.diff (self.scope)
+    for name, member in value.members.items ():
 
-    members = diff.variables.copy ()
+      scope.addv (name, member)
 
-    if isinstance (node, ProtocolDecl):
+    TypingVisitor (scope, compose = value).visit (node.body) # type: ignore
 
-      value = ProtocolType (node.name, members, parent) # type: ignore
-
-    else:
-
-      value = CompositeType (node.name, members, parent) # type: ignore
-
-    self.scope.addt (node.name, value)
-
-    node.typeref = value
     return value
 
   @visitor.when (UnaryOperator)
@@ -333,8 +316,6 @@ class TypeCheckVisitor:
 
       case _: value = self.visit (node.argument) # type: ignore
 
-    node.typeref = value
-
     return value
 
   @visitor.when (VariableValue)
@@ -346,27 +327,4 @@ class TypeCheckVisitor:
 
       raise SemanticException (node, f'unknown variable \'{node.name}\'')
 
-    elif not self.invoker and isinstance (value, FunctionType):
-
-      raise SemanticException (node, f'functions can not be accessed as variables')
-
-    node.typeref = value
-
-    return value
-
-  @visitor.when (VarParam)
-  def visit (self, node: VarParam) -> TypeRef:
-
-    value = self.visit (node.value) # type: ignore
-
-    if node.typeref != None:
-
-      node.typeref = self.scope.derive (node.typeref)
-
-      if node.typeref != value:
-
-        raise SemanticException (node, f'can not assign a \'{value}\' value to a \'{node.typeref}\' variable')
-
-    node.typeref = value
-
-    return value
+    return self.scope.derive (value or AnyType ())

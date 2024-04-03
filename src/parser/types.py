@@ -18,6 +18,17 @@ from typing import Any, Dict, List, Self
 
 CTOR_NAME = "@ctor"
 
+BASE_TYPENAME = 'object'
+BOOLEAN_TYPENAME = 'boolean'
+DEFAULT_TYPENAME = 'default'
+ITERABLE_PROTOCOL = 'iterable'
+NUMBER_TYPENAME = 'number'
+STRING_TYPENAME = 'string'
+
+BOOLEAN_FALSE = 'false'
+BOOLEAN_TRUE = 'true'
+DEFAULT_VALUE = 'default'
+
 class TypeRef:
 
   def clone (self, **kwargs):
@@ -31,6 +42,7 @@ class TypeRef:
     if not isinstance (__value, TypeRef):
 
       return super ().__eq__ (__value)
+
     else:
 
       return self.name == __value.name and self.vector == __value.vector
@@ -95,7 +107,7 @@ class CompositeType (TypeRef):
 
   def get_ctor (self) -> None | TypeRef:
 
-    pass
+    return self.members.get (CTOR_NAME)
 
   def get_member (self, name: str, default: Any = None) -> None | TypeRef:
 
@@ -166,12 +178,14 @@ class ProtocolType (CompositeType):
 
     super ().__init__ (name = name, members = members, parent = parent, vector = kwargs.get ('vector', False))
 
-class SelfType (TypeRef):
+def compare_types (refa: TypeRef, refb: TypeRef) -> bool:
 
-  def __eq__(self, __value: object) -> bool:
+  return refa.__eq__ (refb) or isinstance (refb, AnyType)
 
-    return isinstance (__value, SelfType)
+BASE_TYPE = CompositeType (BASE_TYPENAME, { })
+BOOLEAN_TYPE = TypeRef (BOOLEAN_TYPENAME, False)
+DEFAULT_TYPE = TypeRef (DEFAULT_TYPENAME, False)
+NUMBER_TYPE = TypeRef (NUMBER_TYPENAME, False)
+STRING_TYPE = TypeRef (STRING_TYPENAME, False)
 
-  def __init__(self, **kwargs):
-
-    super ().__init__ (name = 'self', vector = False, **kwargs)
+BASE_TYPE.members [CTOR_NAME] = FunctionType (CTOR_NAME, [ ], BASE_TYPE)

@@ -14,9 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
+from lexer.lexer import Token
 from parser.ast.assignment import DestructiveAssignment
 from parser.ast.base import AstNode
-from parser.ast.base import BASE_TYPE, ITERABLE_PROTOCOL
 from parser.ast.base import Value
 from parser.ast.block import Block
 from parser.ast.conditional import Conditional
@@ -28,8 +28,7 @@ from parser.ast.loops import While
 from parser.ast.operator import BinaryOperator, UnaryOperator
 from parser.ast.param import Param, VarParam
 from parser.ast.value import BooleanValue, NewValue, NumberValue, StringValue, VariableValue
-from parser.types import CTOR_NAME, AnyType, TypeRef
-from lexer.lexer import Token
+from parser.types import BASE_TYPE, CTOR_NAME, ITERABLE_PROTOCOL, TypeRef
 from typing import Any, List, Tuple
 
 def annot (first: Token):
@@ -203,8 +202,10 @@ def build_typedecl (args: Tuple, first: Token, nameat: int = 0, paramsat: int = 
   parent: str = getvat (args, parentat, BASE_TYPE)
   parentctor: List[Value] = getat (args, parentctorat)
 
-  ctorb = Block ([ Invoke (ClassAccess (VariableValue ('self'), CTOR_NAME), parentctor or [ ]) ])
-  ctor = FunctionDecl (CTOR_NAME, params or [ ], None, ctorb)
+  deb = annot (getat (args, parentctorat) or first)
+
+  ctorb = Block ([ Invoke (ClassAccess (VariableValue ('base'), CTOR_NAME), parentctor or [ ], **deb), VariableValue ('self') ])
+  ctor = FunctionDecl (CTOR_NAME, params or [ ], TypeRef (name, False), ctorb)
 
   body = Block ([ ctor, *body.stmts ]) # type: ignore
   decl = TypeDecl (name, parent, body, **annot (first))

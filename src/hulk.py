@@ -54,7 +54,10 @@ def program ():
       ast = Parser (tokens)
 
       print ('\n'.join (PrintVisitor ().visit (ast)))
+      print ('-*-*-')
+
       SemanticChecker ().check (ast)
 
+      print ('\n'.join (PrintVisitor ().visit (ast)))
 
 program ()

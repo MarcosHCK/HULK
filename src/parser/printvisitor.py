@@ -14,19 +14,19 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
-from .ast.assignment import DestructiveAssignment
-from .ast.base import TypeRef
-from .ast.block import Block
-from .ast.conditional import Conditional
-from .ast.constant import Constant
-from .ast.decl import FunctionDecl, ProtocolDecl, TypeDecl
-from .ast.indirection import ClassAccess
-from .ast.invoke import Invoke
-from .ast.let import Let
-from .ast.loops import While
-from .ast.operator import BinaryOperator, UnaryOperator
-from .ast.param import Param, VarParam
-from .ast.value import NewValue, VariableValue
+from parser.ast.assignment import DestructiveAssignment
+from parser.ast.block import Block
+from parser.ast.conditional import Conditional
+from parser.ast.constant import Constant
+from parser.ast.decl import FunctionDecl, ProtocolDecl, TypeDecl
+from parser.ast.indirection import ClassAccess
+from parser.ast.invoke import Invoke
+from parser.ast.let import Let
+from parser.ast.loops import While
+from parser.ast.operator import BinaryOperator, UnaryOperator
+from parser.ast.param import Param, VarParam
+from parser.ast.value import NewValue, VariableValue
+from parser.types import TypeRef
 import utils.visitor as visitor
 
 class PrintVisitor (object):

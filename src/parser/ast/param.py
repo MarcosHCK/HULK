@@ -14,8 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
-from parser.ast.base import TypeRef
 from parser.ast.base import Value
+from parser.types import TypeRef
 
 class Param (Value):
 
@@ -24,6 +24,7 @@ class Param (Value):
     super ().__init__ (typeref = typeref, **kwargs)
 
     self.name = name
+    self.typeref = typeref
 
 class VarParam (Param):
 

@@ -14,23 +14,30 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
-from ..ast.base import TypeRef
+from collections import OrderedDict
+from parser.types import TypeRef
 from typing import Any, Dict
 
 class Scope:
 
   def __init__ (self) -> None:
 
-    self.types: Dict[str, TypeRef] = { }
-    self.variables: Dict[str, TypeRef] = { }
+    self.types: Dict[str, TypeRef] = OrderedDict ()
+    self.variables: Dict[str, TypeRef] = OrderedDict ()
 
-  def addt (self, name: str, typeref: TypeRef) -> None:
+  def addt (self, name: str, typeref: TypeRef) -> None | TypeRef:
+
+    was = self.gett (name, None)
 
     self.types[name] = typeref
+    return was
 
-  def addv (self, name: str, typeref: TypeRef) -> None:
+  def addv (self, name: str, typeref: TypeRef) -> None | TypeRef:
+
+    was = self.getv (name, None)
 
     self.variables[name] = typeref
+    return was
 
   def derive (self, typeref: TypeRef) -> TypeRef:
 

@@ -19,7 +19,7 @@ protocol Clonable
   clone (): Clonable;
 }
 
-type Queue (a) inherits object (a)
+type Queue (a) inherits object
 {
   head: number = 0;
 
@@ -32,8 +32,11 @@ type Queue (a) inherits object (a)
   next () => true;
 } default;
 
+type SQueue (a, b) inherits Queue (a * 2)
+{
+}
+
 let a = new Queue () in
 {
   for (e in a) printn (e);
-  a.push (4);
 };

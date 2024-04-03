@@ -15,15 +15,16 @@
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
 from parser.ast.base import AstNode
-from parser.ast.base import BASE_TYPE, BASE_TYPENAME
-from parser.ast.base import BOOLEAN_FALSE, BOOLEAN_TRUE
-from parser.ast.base import BOOLEAN_TYPE, DEFAULT_TYPE, NUMBER_TYPE
-from parser.ast.base import BOOLEAN_TYPENAME, DEFAULT_VALUE
-from parser.ast.base import DEFAULT_TYPENAME, NUMBER_TYPENAME
-from parser.ast.base import ITERABLE_PROTOCOL
+from parser.semantic.collector import CollectorVisitor
 from parser.semantic.scope import Scope
-from parser.semantic.typecheck import TypeCheckVisitor
-from parser.types import AnyType, FunctionType, ProtocolType, SelfType
+from parser.semantic.typing import TypingVisitor
+from parser.types import AnyType, CompositeType, FunctionType, ProtocolType
+from parser.types import BASE_TYPE, BASE_TYPENAME
+from parser.types import BOOLEAN_FALSE, BOOLEAN_TRUE
+from parser.types import BOOLEAN_TYPE, DEFAULT_TYPE, NUMBER_TYPE
+from parser.types import BOOLEAN_TYPENAME, DEFAULT_VALUE
+from parser.types import DEFAULT_TYPENAME, NUMBER_TYPENAME
+from parser.types import ITERABLE_PROTOCOL
 
 class SemanticChecker:
 
@@ -33,8 +34,8 @@ class SemanticChecker:
 
     iterable = ProtocolType (ITERABLE_PROTOCOL, {
 
-      'current': FunctionType ('current', [ SelfType () ], AnyType ()),
-      'next': FunctionType ('next', [ SelfType () ], AnyType ()),
+      'current': FunctionType ('current', [ ], AnyType ()),
+      'next': FunctionType ('next', [ ], AnyType ()),
     })
 
     scope.addt (BASE_TYPENAME, BASE_TYPE)
@@ -53,4 +54,5 @@ class SemanticChecker:
 
     scope = self.scope.clone ()
 
-    TypeCheckVisitor (scope).visit (node) # type: ignore
+    CollectorVisitor (scope).visit (node) # type: ignore
+    TypingVisitor (scope).visit (node) # type: ignore

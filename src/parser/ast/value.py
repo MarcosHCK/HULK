@@ -35,9 +35,10 @@ class NewValue (Value):
 
   def __init__ (self, typeref: TypeRef, arguments: List[Value], **kwargs):
 
-    super ().__init__ (typeref = typeref, **kwargs)
+    super ().__init__ (**kwargs)
 
     self.arguments = arguments
+    self.typeref = typeref
 
 class NumberValue (Constant):
 

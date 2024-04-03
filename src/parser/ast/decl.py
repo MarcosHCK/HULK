@@ -15,10 +15,9 @@
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
 from parser.ast.base import AstNode
-from parser.ast.base import TypeRef
-from parser.ast.base import Value
 from parser.ast.block import Block
 from parser.ast.param import Param
+from parser.types import TypeRef
 from typing import List
 
 class FunctionDecl (AstNode):
@@ -30,6 +29,7 @@ class FunctionDecl (AstNode):
     self.body = body
     self.name = name
     self.params = params
+    self.typeref = typeref
 
 class ProtocolDecl (AstNode):
 
