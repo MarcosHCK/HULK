@@ -15,16 +15,16 @@
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
 from parser.ast.base import AstNode
-from parser.semantic.collector import CollectorVisitor
-from parser.semantic.scope import Scope
-from parser.semantic.typing import TypingVisitor
-from parser.types import AnyType, CompositeType, FunctionType, ProtocolType
+from parser.types import AnyType, FunctionType, ProtocolType
 from parser.types import BASE_TYPE, BASE_TYPENAME
 from parser.types import BOOLEAN_FALSE, BOOLEAN_TRUE
 from parser.types import BOOLEAN_TYPE, DEFAULT_TYPE, NUMBER_TYPE
 from parser.types import BOOLEAN_TYPENAME, DEFAULT_VALUE
 from parser.types import DEFAULT_TYPENAME, NUMBER_TYPENAME
 from parser.types import ITERABLE_PROTOCOL
+from semantic.collector import CollectorVisitor
+from semantic.scope import Scope
+from semantic.typing import TypingVisitor
 
 class SemanticChecker:
 

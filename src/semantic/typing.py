@@ -26,12 +26,12 @@ from parser.ast.loops import While
 from parser.ast.operator import BinaryOperator, UnaryOperator
 from parser.ast.param import Param, VarParam
 from parser.ast.value import NewValue, VariableValue
-from parser.semantic.collector import CollectorVisitor
-from parser.semantic.exception import SemanticException
-from parser.semantic.scope import Scope
 from parser.types import AnyType, CompositeType, FunctionType, ProtocolType, TypeRef
-from parser.types import compare_types
 from parser.types import BOOLEAN_TYPE, NUMBER_TYPE, STRING_TYPE
+from parser.types import compare_types
+from semantic.collector import CollectorVisitor
+from semantic.exception import SemanticException
+from semantic.scope import Scope
 import utils.visitor as visitor
 
 class TypingVisitor:

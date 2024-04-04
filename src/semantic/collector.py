@@ -18,9 +18,9 @@ from parser.ast.base import AstNode
 from parser.ast.block import Block
 from parser.ast.decl import FunctionDecl, ProtocolDecl, TypeDecl
 from parser.ast.param import Param
-from parser.semantic.exception import SemanticException
-from parser.semantic.scope import Scope
 from parser.types import AnyType, CompositeType, FunctionType, ProtocolType
+from semantic.exception import SemanticException
+from semantic.scope import Scope
 import utils.visitor as visitor
 
 class CollectorVisitor:
