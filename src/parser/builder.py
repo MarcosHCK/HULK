@@ -204,7 +204,7 @@ def build_typedecl (args: Tuple, first: Token, nameat: int = 0, paramsat: int = 
   body: Block = getat (args, bodyat)
   name: str = getvat (args, nameat)
   params: List[Param] = getat (args, paramsat)
-  parent: str = getvat (args, parentat, BASE_TYPE.typeref)
+  parent: str = getvat (args, parentat, BASE_TYPE.name)
   parentctor: List[Value] = getat (args, parentctorat)
 
   deb = annot (getat (args, parentctorat) or first)

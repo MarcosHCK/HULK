@@ -14,60 +14,85 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
-from typing import Dict
 from codegen.alternate import alternate
 from codegen.frame import Frame
 from codegen.types import Types
 from parser.ast.block import Block
-from parser.ast.decl import FunctionDecl
-from parser.types import FunctionType
+from parser.ast.decl import FunctionDecl, TypeDecl
+from parser.types import CompositeType, FunctionType
 from semantic.exception import SemanticException
 from semantic.scope import Scope
-import llvmlite.ir as ir
 from semantic.typing import TypingVisitor
+from typing import Dict
+import llvmlite.ir as ir
 import utils.visitor as visitor
 
 class CollectorVisitor:
 
+  def __init__ (self, compose: None | CompositeType = None):
+
+    self.compose = compose
+
   @visitor.on ('node')
-  def visit (self, node, frame: Frame, scope: Scope, types: Types):
+  def visit (self, context: ir.Context, node, frame: Frame, scope: Scope, types: Types):
 
     pass
 
   @visitor.when (Block)
-  def visit (self, node: Block, frame: Frame, scope: Scope, types: Types):
+  def visit (self, context: ir.Context, node: Block, frame: Frame, scope: Scope, types: Types):
 
     for stmt in node.stmts:
 
-      self.visit (stmt, frame, scope, types) # type: ignore
+      self.visit (context, stmt, frame, scope, types) # type: ignore
 
   @visitor.when (FunctionDecl)
-  def visit (self, node: FunctionDecl, frame: Frame, scope: Scope, types: Types):
+  def visit (self, context: ir.Context, node: FunctionDecl, frame: Frame, scope: Scope, types: Types):
 
+    fnname = node.name if not self.compose else f'{self.compose.name}.{node.name}'
+    
     valid: Dict[str, ir.FunctionType] = { }
-    typeref: FunctionType = scope.getv (node.name) # type: ignore
+    typeref: FunctionType = scope.getv (fnname) # type: ignore
 
     for alt in alternate (typeref):
 
       d_scope = scope.clone ()
-      d_types = types.clone ()
+      d_types = types
 
-      d_scope.variables [node.name] = alt
+      d_scope.variables [fnname] = alt
+
+      if self.compose != None:
+
+        d_scope.addv ('base', self.compose)
+        d_scope.addv ('self', self.compose)
 
       try:
 
-        TypingVisitor (d_scope).visit (node) # type: ignore
+        TypingVisitor (d_scope).visit (FunctionDecl (fnname, node.params, node.typeref, node.body)) # type: ignore
 
-        d_types.fit (alt)
+        d_types.fit (context, alt)
 
-        alts: Dict[str, ir.FunctionType] = d_types [node.name] # type: ignore
+        alts: Dict[str, ir.FunctionType] = d_types [fnname] # type: ignore
 
         for name, alt in alts.items ():
 
+          if self.compose:
+
+            alt.args = [ ir.PointerType (types[self.compose.name]), *alt.args ] # type: ignore
+
           valid [name] = alt
 
-      except SemanticException:
+      except SemanticException as e:
 
         pass
 
-    types.add (node.name, valid) # type: ignore
+      d_types._store [fnname] = None
+
+    types.add (fnname, valid) # type: ignore
+
+  @visitor.when (TypeDecl)
+  def visit (self, context: ir.Context, node: FunctionDecl, frame: Frame, scope: Scope, types: Types):
+
+    compose: CompositeType
+    types.fit (context, compose := scope.gett (node.name)) # type: ignore
+
+    CollectorVisitor (compose = compose).visit (context, node.body, frame, scope, types) # type: ignore

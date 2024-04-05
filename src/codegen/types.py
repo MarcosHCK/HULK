@@ -17,7 +17,7 @@
 from codegen.alternate import alternate
 from functools import reduce
 from parser.types import CTOR_NAME, CompositeType, FunctionType, ProtocolType, TypeRef
-from typing import Any, List
+from typing import Any, Dict, List
 import llvmlite.ir as ir
 
 class Types:
@@ -47,15 +47,24 @@ class Types:
 
     return child
 
-  def fit (self, typeref: TypeRef) -> ir.Type:
+  def fit (self, context: ir.Context, typeref: TypeRef) -> ir.Type:
 
     if (refty := self._store.get (typeref.name, None)) == None:
 
       if isinstance (typeref, CompositeType) and not isinstance (typeref, ProtocolType):
 
-        self._store [typeref.name] = (refty := ir.LiteralStructType ([]))
+        self._store [typeref.name] = (refty := context.get_identified_type (typeref.name))
 
-        refty.elements = list (map (lambda e: self.fit (e), filter (lambda e: e.name != CTOR_NAME, typeref.members.values ()))) # type: ignore
+        attributes = filter (lambda e: isinstance (e, FunctionType) == False, typeref.members.values ())
+        functions = filter (lambda e: isinstance (e, FunctionType) == True, typeref.members.values ())
+
+        attributes = map (lambda e: self.fit (context, e), attributes) # type: ignore
+        functions = reduce (lambda a, e: [ *self.fit_function (context, e), *a ], functions, []) # type: ignore
+        functions = map (lambda e: ir.PointerType (e), functions)
+
+        parent = ir.IntType (32) if not typeref.parent else self.fit (context, typeref.parent) # type: ignore
+
+        refty.set_body (parent, *attributes, *functions)
 
       elif isinstance (typeref, FunctionType):
 
@@ -65,14 +74,30 @@ class Types:
 
           alt [Types.mangle (typeref.name, typeref)] = (refty := ir.FunctionType (ir.VoidType (), []))
 
-          refty.args = list (map (lambda e: self.fit (e), typeref.params)) # type: ignore
-          refty.return_type = self.fit (typeref.typeref) # type: ignore
+          refty.args = list (map (lambda e: self.fit (context, e), typeref.params)) # type: ignore
+          refty.return_type = self.fit (context, typeref.typeref) # type: ignore
 
       elif not isinstance (typeref, ProtocolType):
 
         raise Exception (f'unknown type \'{str (typeref)}:{type (typeref)}\'')
 
     return refty
+
+  def fit_function (self, context: ir.Context, typeref: FunctionType) -> List[ir.FunctionType]:
+
+    self.fit (context, typeref)
+
+    return self [typeref.name].values () # type: ignore
+
+  def function (self, name: str, params: List[ir.Type]) -> None | str:
+
+    alts: Dict[str, ir.FunctionType] = self [name] # type: ignore
+
+    for name, alt in alts.items ():
+
+      if alt.args == params: return name
+
+    return None
 
   def get (self, key: str, default: Any = None) -> None | ir.Type:
 

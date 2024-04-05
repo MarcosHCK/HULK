@@ -14,29 +14,41 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
+from typing import Dict
 from parser.ast.base import AstNode
 from parser.ast.block import Block
 from parser.ast.decl import FunctionDecl, ProtocolDecl, TypeDecl
 from parser.ast.param import Param
-from parser.types import AnyType, CompositeType, FunctionType, ProtocolType
+from parser.types import AnyType, CompositeType, FunctionType, ProtocolType, TypeRef
 from semantic.exception import SemanticException
 from semantic.scope import Scope
 import utils.visitor as visitor
 
+ParentDecl = None | ProtocolDecl | TypeDecl
+
 class CollectorVisitor:
 
-  def __init__(self, scope: Scope) -> None:
+  def __init__(self, scope: Scope, compose: ParentDecl = None) -> None:
 
+    self.compose = compose
     self.scope = scope
 
-  def dive (self, node: AstNode):
+  def dive (self, node: AstNode, compose: ParentDecl = None):
 
     scope = self.scope.clone ()
-    collector = CollectorVisitor (scope)
+    collector = CollectorVisitor (scope, compose = compose)
 
     collector.visit (node) # type: ignore
 
     return scope.diff (self.scope)
+
+  def post (self, fields: Dict[str, TypeRef]):
+
+    for name, field in fields.items ():
+
+      if isinstance (field, FunctionType):
+
+        self.scope.addv (name, FunctionType (name, field.params, field.typeref))
 
   @visitor.on ('node')
   def visit (self, node):
@@ -54,13 +66,14 @@ class CollectorVisitor:
   def visit (self, node: FunctionDecl) -> None:
 
     dif = self.dive (node.params).variables # type: ignore
-    arr = list (dif.values ())
 
     ret = self.scope.derive (node.typeref or AnyType ())
 
-    ref = FunctionType (node.name, arr, ret)
+    ref = FunctionType (node.name, list (dif.values ()), ret)
 
-    if (last := self.scope.addv (node.name, ref)) != None:
+    name = node.name if not self.compose else f'{self.compose.name}.{node.name}'
+
+    if (last := self.scope.addv (name, ref)) != None:
 
       if isinstance (last, FunctionType):
 
@@ -95,9 +108,9 @@ class CollectorVisitor:
   @visitor.when (ProtocolDecl)
   def visit (self, node: ProtocolDecl) -> None:
 
-    div = self.dive (node.body).variables
+    self.post (div := self.dive (node.body, node).variables)
 
-    ref = ProtocolType (node.name, dict (div), None)
+    ref = ProtocolType (node.name, { name.removeprefix (f'{node.name}.'): ref for name, ref in div.items () }, None)
 
     if (last := self.scope.addt (node.name, ref)) != None:
 
@@ -112,9 +125,9 @@ class CollectorVisitor:
   @visitor.when (TypeDecl)
   def visit (self, node: TypeDecl) -> None:
 
-    div = self.dive (node.body).variables
+    self.post (div := self.dive (node.body, node).variables)
 
-    ref = CompositeType (node.name, dict (div), None)
+    ref = CompositeType (node.name, { name.removeprefix (f'{node.name}.'): ref for name, ref in div.items () }, None)
 
     if (last := self.scope.addt (node.name, ref)) != None:
 

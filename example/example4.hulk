@@ -17,3 +17,14 @@ function min (a: number, b: number)
 }
 
 print (printn (max (5, 6) + 1));
+
+type Simple
+{
+  t: number = 5;
+  max (a) => a;
+}
+
+let a = new Simple () in
+{
+  print (5);
+};

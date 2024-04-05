@@ -22,22 +22,24 @@ from parser.ast.assignment import DestructiveAssignment
 from parser.ast.block import Block
 from parser.ast.conditional import Conditional
 from parser.ast.constant import Constant
-from parser.ast.decl import FunctionDecl
+from parser.ast.decl import FunctionDecl, TypeDecl
+from parser.ast.indirection import ClassAccess
 from parser.ast.invoke import Invoke
 from parser.ast.let import Let
 from parser.ast.loops import While
 from parser.ast.operator import BinaryOperator, UnaryOperator
-from parser.ast.value import VariableValue
+from parser.ast.value import NewValue, VariableValue
 from typing import Dict, List
-from parser.types import FunctionType
+from parser.types import CTOR_NAME, CompositeType
 from utils.builtins import BOOLEAN_TYPE, NUMBER_TYPE, STRING_TYPE
 import llvmlite.ir as ir
 import utils.visitor as visitor
 
 class FillerVisitor:
 
-  def __init__(self) -> None:
+  def __init__(self, compose: None | ir.IdentifiedStructType = None) -> None:
 
+    self.compose = compose
     pass
 
   @visitor.on ('node')
@@ -88,6 +90,15 @@ class FillerVisitor:
         value = last
 
     return value
+
+  @visitor.when (ClassAccess)
+  def visit (self, builder: ir.IRBuilder, node: Conditional, frame: Frame, types: Types) -> ir.Value:
+
+    match frame.mode:
+
+      case FrameMode.NORMAL: raise Exception ('unimplemented')
+      case FrameMode.INDIRECT: raise Exception ('unimplemented')
+      case FrameMode.INVOKE: raise Exception ('unimplemented')
 
   @visitor.when (Conditional)
   def visit (self, builder: ir.IRBuilder, node: Conditional, frame: Frame, types: Types) -> ir.Value:
@@ -147,19 +158,32 @@ class FillerVisitor:
   @visitor.when (FunctionDecl)
   def visit (self, builder: ir.IRBuilder, node: FunctionDecl, frame: Frame, types: Types) -> None:
 
-    alts: Dict[str, ir.FunctionType] = types [node.name] # type: ignore
+    alts: Dict[str, ir.FunctionType]
+
+    if not self.compose:
+
+      alts = types [node.name] # type: ignore
+    else:
+
+      alts = types [f'{self.compose.name}.{node.name}'] # type: ignore
 
     for signature, alt in alts.items ():
 
       frame = frame.clone ()
       func: ir.Function = frame[signature] # type: ignore
 
+      arguments = func.args if not self.compose else func.args [1:]
       implementor = ir.IRBuilder (func.append_basic_block ())
 
       for name, type_, value in zip (map (lambda e: e.name, node.params), alt.args, func.args):
 
         implementor.store (value, (store := implementor.alloca (type_, 1)))
-        frame[name] = store
+        frame [name] = store
+
+      if self.compose != None:
+
+        frame ['self'] = func.args [0]
+        frame ['base'] = func.args [0]
 
       implementor.ret (self.visit (implementor, node.body, frame, types)) # type: ignore
 
@@ -193,6 +217,28 @@ class FillerVisitor:
 
     return self.visit (builder, node.body, frame, types) # type: ignore
 
+  @visitor.when (NewValue)
+  def visit (self, builder: ir.IRBuilder, node: NewValue, frame: Frame, types: Types) -> ir.Value:
+
+    arguments = map (lambda a: self.visit (builder, a, frame, types), node.arguments) # type: ignore
+    arguments = [ builder.alloca (types [node.typeref.name], 1), *arguments ]
+    params = map (lambda v: v.type, frame.locals.values ()) # type: ignore
+    params = [ ir.PointerType (types [node.typeref.name]), *params ]
+
+    if (name := types.function (f'{node.typeref.name}.{CTOR_NAME}', params)) != None:
+
+      return builder.call (frame [name], arguments, f'new {node.typeref.name}')
+    else:
+
+      raise CodegenException (node, 'no function candidate found')
+
+  @visitor.when (TypeDecl)
+  def visit (self, builder: ir.IRBuilder, node: TypeDecl, frame: Frame, types: Types) -> None:
+
+    compose = types [node.name]
+
+    FillerVisitor (compose = compose).visit (builder, node.body, frame, types) # type: ignore
+
   @visitor.when (UnaryOperator)
   def visit (self, builder: ir.IRBuilder, node: UnaryOperator, frame: Frame, types: Types) -> ir.Value:
 
@@ -214,14 +260,14 @@ class FillerVisitor:
 
       case FrameMode.INVOKE:
 
-        alts: Dict[str, ir.FunctionType] = types[node.name] # type: ignore
         params: List[ir.Type] = list (map (lambda v: v.type, frame.locals.values ())) # type: ignore
 
-        for name, alt in alts.items ():
+        if (name := types.function (node.name, params)) != None:
+          
+          return frame[name]
+        else:
 
-          if alt.args == params: return frame[name]
-
-        raise CodegenException (node, 'no function candidate found')
+          raise CodegenException (node, 'no function candidate found')
 
   @visitor.when (While)
   def visit (self, builder: ir.IRBuilder, node: While, frame: Frame, types: Types) -> ir.Value:

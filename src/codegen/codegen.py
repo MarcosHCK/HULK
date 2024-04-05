@@ -53,17 +53,17 @@ class Codegen ():
     frame = Frame ()
     types = self.types.clone ()
 
-    CollectorVisitor ().visit (ast, frame, scope, types) # type: ignore
+    CollectorVisitor ().visit (module.context, ast, frame, scope, types) # type: ignore
 
     for name, type_ in scope.types.items ():
 
       if not isinstance (type_, ProtocolType):
 
-        types.fit (type_)
+        types.fit (module.context, type_)
 
     for name, type_ in scope.variables.items ():
 
-      types.fit (type_)
+      types.fit (module.context, type_)
 
       if isinstance (type_, FunctionType):
 

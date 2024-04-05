@@ -28,7 +28,6 @@ from parser.ast.param import Param, VarParam
 from parser.ast.value import NewValue, VariableValue
 from parser.types import AnyType, CompositeType, FunctionType, ProtocolType, TypeRef
 from parser.types import compare_types
-from semantic.collector import CollectorVisitor
 from semantic.exception import SemanticException
 from semantic.scope import Scope
 from utils.builtins import BOOLEAN_TYPE
@@ -156,9 +155,11 @@ class TypingVisitor:
   @visitor.when (FunctionDecl)
   def visit (self, node: FunctionDecl) -> TypeRef:
 
+    name = node.name if not self.compose else f'{self.compose.name}.{node.name}'
+
     params = []
     scope: Scope = self.scope.clone ()
-    value: FunctionType = self.scope.getv (node.name) # type: ignore
+    value: FunctionType = self.scope.getv (name) # type: ignore
 
     if self.compose != None:
 
@@ -198,16 +199,15 @@ class TypingVisitor:
   def visit (self, node: Invoke) -> TypeRef:
 
     arguments = list (map (lambda a: self.visit (a), node.arguments)) # type: ignore
-
-    target = TypingVisitor (self.scope).visit (node.target) # type: ignore
+    target = self.visit (node.target) # type: ignore
 
     if not isinstance (target, FunctionType):
 
       raise SemanticException (node, f'attempt to call a \'{target}\' value')
 
-    if len (target.params) != len (arguments):
+    if len (arguments) != len (target.params):
 
-      raise SemanticException (node, f'{target.name} function requires {len (target.params)}, {len (arguments)} were given')
+      raise SemanticException (node, f'{target.name} function requires {len (target.params)}, got {len (arguments)}')
 
     elif any ([ not compare_types (a, b) for a, b in zip (arguments, target.params) ]):
 
@@ -225,13 +225,11 @@ class TypingVisitor:
   def visit (self, node: Let) -> TypeRef:
 
     scope = self.scope.clone ()
-    collector = CollectorVisitor (scope)
     typing = TypingVisitor (scope)
 
     for param in node.params:
 
-      param.typeref = collector.visit (param) # type: ignore
-      param.typeref = typing.visit (param) # type: ignore
+      scope.addv (param.name, typing.visit (param)) # type: ignore
 
     return typing.visit (node.body) # type: ignore
 

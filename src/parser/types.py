@@ -204,4 +204,4 @@ class UnionType (TypeRef):
 
 def compare_types (refa: TypeRef, refb: TypeRef) -> bool:
 
-  return refa.__eq__ (refb) or refb.__eq__ (refa)
+  return refa.__eq__ (refb) or isinstance (refb, AnyType) or (isinstance (refb, UnionType) and refb.__eq__ (refa))
