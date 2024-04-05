@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
+from functools import reduce
 from typing import Any, Dict, List, Self
 
 CTOR_NAME = "@ctor"
@@ -124,7 +125,7 @@ class FunctionType (TypeRef):
 
     else:
 
-      return super ().__eq__ (__value) and self.typeref == __value.typeref and self.params == __value.params
+      return super ().__eq__ (__value) and self.typeref == __value.typeref and not any ([ not compare_types (a, b) for a, b in zip (self.params, __value.params) ])
 
   def __init__ (self, name: str, params: List[TypeRef], typeref: TypeRef, **kwargs):
 
@@ -157,7 +158,7 @@ class ProtocolType (CompositeType):
 
         other = __value.get_member (name)
 
-        if other == None or other != member:
+        if other == None or not compare_types (other, member):
 
           return False
 
@@ -167,6 +168,40 @@ class ProtocolType (CompositeType):
 
     super ().__init__ (name = name, members = members, parent = parent, vector = kwargs.get ('vector', False))
 
+class UnionType (TypeRef):
+
+  def clone (self, **kwargs):
+
+    child = UnionType (fellow = self.fellow, **kwargs)
+
+    return child
+
+  def __eq__ (self, __value: object) -> bool:
+
+    if not isinstance (__value, TypeRef):
+
+      return super ().__eq__ (__value)
+
+    else:
+
+      for fellow in self.fellow:
+
+        if compare_types (fellow, __value):
+
+          return True
+
+      return False
+
+  def __init__ (self, fellow: List[TypeRef], **kwargs):
+
+    super ().__init__ (name = 'union', vector = False, **kwargs)
+
+    self.fellow = fellow
+
+  def __str__ (self) -> str:
+
+    return f'union[{",".join (map (lambda e: str (e), self.fellow))}]'
+
 def compare_types (refa: TypeRef, refb: TypeRef) -> bool:
 
-  return refa.__eq__ (refb) or isinstance (refb, AnyType)
+  return refa.__eq__ (refb) or refb.__eq__ (refa)

@@ -215,7 +215,7 @@ class TypingVisitor:
 
         if not compare_types (typea, typeb):
 
-          raise SemanticException (node, f'can not convert a \'{typeb}\' value to a \'{typea}\' type')
+          raise SemanticException (node, f'can not convert a \'{typea}\' value to a \'{typeb}\' type')
 
       raise Exception ('invalid argument types')
 

@@ -14,13 +14,14 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
-from typing import Dict
+from codegen.collector import CollectorVisitor
+from codegen.filler import FillerVisitor
 from codegen.frame import Frame
 from codegen.types import Types
-from codegen.filler import FillerVisitor
 from parser.ast.base import AstNode
-from parser.types import AnyType, ProtocolType
+from parser.types import FunctionType, ProtocolType
 from semantic.scope import Scope
+from typing import Dict
 from utils.builtins import BOOLEAN_TYPE
 from utils.builtins import NUMBER_TYPE
 from utils.builtins import STRING_TYPE
@@ -48,33 +49,34 @@ class Codegen ():
 
     mainty = ir.FunctionType (ir.IntType (32), [])
     main = ir.Function (module, mainty, 'main')
-    mainbb = main.append_basic_block (name = 'entry')
 
-    builder.position_at_end (mainbb)
-
-    any = AnyType ()
     frame = Frame ()
     types = self.types.clone ()
 
+    CollectorVisitor ().visit (ast, frame, scope, types) # type: ignore
+
     for name, type_ in scope.types.items ():
 
-      if name not in any.name and not isinstance (type_, ProtocolType):
+      if not isinstance (type_, ProtocolType):
 
         types.fit (type_)
 
     for name, type_ in scope.variables.items ():
 
-      if isinstance (types.fit (type_), ir.FunctionType):
+      types.fit (type_)
+
+      if isinstance (type_, FunctionType):
 
         alt: Dict[str, ir.FunctionType] = types[type_.name] # type: ignore
 
         for name, functy in alt.items ():
 
-          frame[name] = ir.Function (module, functy, name)
+          frame [name] = ir.Function (module, functy, name)
+
+    builder.position_at_end (main.append_basic_block (name = 'entry'))
 
     FillerVisitor ().visit (builder, ast, frame, types) # type: ignore
     builder.ret (ir.Constant (mainty.return_type, 0))
-    print (module)
 
     llvm.parse_assembly (str (module)).verify ()
     return module

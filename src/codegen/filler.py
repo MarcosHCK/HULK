@@ -14,7 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
-from typing import Dict, List
 from codegen.exception import CodegenException
 from codegen.frame import Frame
 from codegen.frame import Mode as FrameMode
@@ -23,11 +22,13 @@ from parser.ast.assignment import DestructiveAssignment
 from parser.ast.block import Block
 from parser.ast.conditional import Conditional
 from parser.ast.constant import Constant
+from parser.ast.decl import FunctionDecl
 from parser.ast.invoke import Invoke
 from parser.ast.let import Let
 from parser.ast.loops import While
 from parser.ast.operator import BinaryOperator, UnaryOperator
 from parser.ast.value import VariableValue
+from typing import Dict, List
 from parser.types import FunctionType
 from utils.builtins import BOOLEAN_TYPE, NUMBER_TYPE, STRING_TYPE
 import llvmlite.ir as ir
@@ -82,7 +83,9 @@ class FillerVisitor:
 
     for stmt in node.stmts:
 
-      value = self.visit (builder, stmt, frame, types) # type: ignore
+      if (last := self.visit (builder, stmt, frame, types)) != None: # type: ignore
+
+        value = last
 
     return value
 
@@ -140,6 +143,25 @@ class FillerVisitor:
     builder.store (value, over)
 
     return value
+
+  @visitor.when (FunctionDecl)
+  def visit (self, builder: ir.IRBuilder, node: FunctionDecl, frame: Frame, types: Types) -> None:
+
+    alts: Dict[str, ir.FunctionType] = types [node.name] # type: ignore
+
+    for signature, alt in alts.items ():
+
+      frame = frame.clone ()
+      func: ir.Function = frame[signature] # type: ignore
+
+      implementor = ir.IRBuilder (func.append_basic_block ())
+
+      for name, type_, value in zip (map (lambda e: e.name, node.params), alt.args, func.args):
+
+        implementor.store (value, (store := implementor.alloca (type_, 1)))
+        frame[name] = store
+
+      implementor.ret (self.visit (implementor, node.body, frame, types)) # type: ignore
 
   @visitor.when (Invoke)
   def visit (self, builder: ir.IRBuilder, node: Invoke, frame: Frame, types: Types) -> ir.Value:

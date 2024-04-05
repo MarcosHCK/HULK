@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
-from parser.types import AnyType
+from parser.types import AnyType, UnionType
 from parser.types import CompositeType
 from parser.types import CTOR_NAME
 from parser.types import FunctionType
@@ -47,10 +47,12 @@ BOOLEAN_FALSE = 'false'
 BOOLEAN_TRUE = 'true'
 
 BASE_TYPE = BuiltinType ('object', CompositeType ('object', { }))
-ITERABLE_TYPE = BuiltinType ('iterable', ProtocolType ('iterable', { 'current': FunctionType ('current', [ ], AnyType ()), 'next': FunctionType ('next', [ ], AnyType ()), }))
 BOOLEAN_TYPE = BuiltinType ('boolean', TypeRef ('boolean', False))
 NUMBER_TYPE = BuiltinType ('number', TypeRef ('number', False))
 STRING_TYPE = BuiltinType ('string', TypeRef ('string', False))
+
+ITERABLE_TYPE = BuiltinType ('iterable', ProtocolType ('iterable', { 'current': FunctionType ('current', [ ], AnyType ()), 'next': FunctionType ('next', [ ], AnyType ()), }))
+PRINTABLE_TYPE = BuiltinType ('printable', ProtocolType ('printable', { 'tostring': FunctionType ('tostring', [ ], STRING_TYPE.typeref) }))
 
 if True:
 
@@ -70,4 +72,4 @@ MATH_SQRT = BuiltinValue ('sqrt', FunctionType ('sqrt', [ NUMBER_TYPE.typeref ],
 MATH_E = BuiltinValue ('E', NUMBER_TYPE.typeref)
 MATH_PI = BuiltinValue ('PI', NUMBER_TYPE.typeref)
 
-STDLIB_PRINT = BuiltinValue ('print', FunctionType ('print', [ NUMBER_TYPE.typeref ], BOOLEAN_TYPE.typeref))
+STDLIB_PRINT = BuiltinValue ('print', FunctionType ('print', [ UnionType ([ NUMBER_TYPE.typeref, STRING_TYPE.typeref ]) ], BOOLEAN_TYPE.typeref))

@@ -16,8 +16,8 @@
 #
 from codegen.alternate import alternate
 from functools import reduce
-from parser.types import CompositeType, FunctionType, TypeRef
-from typing import List
+from parser.types import CTOR_NAME, CompositeType, FunctionType, ProtocolType, TypeRef
+from typing import Any, List
 import llvmlite.ir as ir
 
 class Types:
@@ -51,11 +51,11 @@ class Types:
 
     if (refty := self._store.get (typeref.name, None)) == None:
 
-      if isinstance (typeref, CompositeType):
+      if isinstance (typeref, CompositeType) and not isinstance (typeref, ProtocolType):
 
         self._store [typeref.name] = (refty := ir.LiteralStructType ([]))
 
-        refty.elements = list (map (lambda e: self.fit (e), typeref.members.values ())) # type: ignore
+        refty.elements = list (map (lambda e: self.fit (e), filter (lambda e: e.name != CTOR_NAME, typeref.members.values ()))) # type: ignore
 
       elif isinstance (typeref, FunctionType):
 
@@ -68,9 +68,15 @@ class Types:
           refty.args = list (map (lambda e: self.fit (e), typeref.params)) # type: ignore
           refty.return_type = self.fit (typeref.typeref) # type: ignore
 
-      else: raise Exception (f'unknown type \'{str (typeref)}\'')
+      elif not isinstance (typeref, ProtocolType):
+
+        raise Exception (f'unknown type \'{str (typeref)}:{type (typeref)}\'')
 
     return refty
+
+  def get (self, key: str, default: Any = None) -> None | ir.Type:
+
+    return self._store.get (key, default)
 
   @staticmethod
   def mangle (name:str, typeref: FunctionType) -> str:

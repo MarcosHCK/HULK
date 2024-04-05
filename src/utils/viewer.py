@@ -246,13 +246,7 @@ class PrintVisitor (object):
   @visitor.when (TypeRef)
   def visit (self, node: TypeRef):
 
-    ref = [ f'{node.name}' ]
-
-    if (node.vector):
-
-      ref.append (' []')
-
-    return [ ''.join (ref) ]
+    return str (node)
 
   @visitor.when (UnaryOperator)
   def visit (self, node: UnaryOperator):

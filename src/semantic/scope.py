@@ -15,7 +15,7 @@
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
 from collections import OrderedDict
-from parser.types import TypeRef
+from parser.types import AnyType, ProtocolType, TypeRef, UnionType
 from typing import Any, Dict
 
 class Scope:
@@ -39,20 +39,47 @@ class Scope:
     self.variables[name] = typeref
     return was
 
+  def clone (self):
+
+    child = Scope ()
+
+    child.types = self.types.copy ()
+    child.variables = self.variables.copy ()
+
+    return child
+
   def derive (self, typeref: TypeRef) -> TypeRef:
 
-    better = self.gett (typeref.name)
+    if isinstance (typeref, AnyType):
 
-    if not better:
+      return self.union ()
 
-      return typeref
+    elif isinstance (typeref, ProtocolType):
+
+      complaint = []
+
+      for type_ in self.types:
+
+        if typeref.__eq__ (type_):
+
+          complaint.append (type_)
+
+      return UnionType (complaint)
+
     else:
 
-      better = better.clone ()
+      better = self.gett (typeref.name)
 
-      better.vector = typeref.vector
+      if not better:
 
-      return better
+        return typeref
+      else:
+
+        better = better.clone ()
+
+        better.vector = typeref.vector
+
+        return better
 
   def diff (self, other):
 
@@ -82,11 +109,6 @@ class Scope:
 
     return self.variables.get (name, default)
 
-  def clone (self):
+  def union (self):
 
-    child = Scope ()
-
-    child.types = self.types.copy ()
-    child.variables = self.variables.copy ()
-
-    return child
+    return UnionType (list (filter (lambda e: not isinstance (e, ProtocolType), self.types.values ())))

@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
-from parser.types import FunctionType, TypeRef
+from parser.types import FunctionType, TypeRef, UnionType
 from typing import Generator, List
 
 def alternate (typeref: FunctionType) -> Generator[FunctionType, None, None]:
@@ -35,7 +35,15 @@ def alternate (typeref: FunctionType) -> Generator[FunctionType, None, None]:
 
 def alternative (ref: TypeRef) -> Generator[TypeRef, None, None]:
 
-  yield ref
+  if not isinstance (ref, UnionType):
+
+    yield ref
+
+  else:
+
+    for fellow in ref.fellow:
+
+      yield fellow
 
 def alternatives (lref: List[TypeRef]) -> Generator[List[TypeRef], None, None]:
 
