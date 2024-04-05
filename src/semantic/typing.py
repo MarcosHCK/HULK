@@ -27,11 +27,13 @@ from parser.ast.operator import BinaryOperator, UnaryOperator
 from parser.ast.param import Param, VarParam
 from parser.ast.value import NewValue, VariableValue
 from parser.types import AnyType, CompositeType, FunctionType, ProtocolType, TypeRef
-from parser.types import BOOLEAN_TYPE, NUMBER_TYPE, STRING_TYPE
 from parser.types import compare_types
 from semantic.collector import CollectorVisitor
 from semantic.exception import SemanticException
 from semantic.scope import Scope
+from utils.builtins import BOOLEAN_TYPE
+from utils.builtins import NUMBER_TYPE
+from utils.builtins import STRING_TYPE
 import utils.visitor as visitor
 
 class TypingVisitor:
@@ -54,9 +56,9 @@ class TypingVisitor:
     match node.operator:
 
       case 'as': value = node.argument2 # type: ignore
-      case 'is': value = BOOLEAN_TYPE
+      case 'is': value = BOOLEAN_TYPE.typeref
 
-      case '@' | '@@': value = STRING_TYPE
+      case '@' | '@@': value = STRING_TYPE.typeref
 
       case _:
 
@@ -71,7 +73,7 @@ class TypingVisitor:
 
           match node.operator:
 
-            case '==' | '!=' | '>=' | '<=' | '>' | '<': value = BOOLEAN_TYPE
+            case '==' | '!=' | '>=' | '<=' | '>' | '<': value = BOOLEAN_TYPE.typeref
             case _: value = (arg2 if isinstance (arg1, AnyType) else arg1)
 
     return value
@@ -111,9 +113,9 @@ class TypingVisitor:
   @visitor.when (Conditional)
   def visit (self, node: Conditional) -> TypeRef:
 
-    if (self.visit (node.condition) != BOOLEAN_TYPE): # type: ignore
+    if (self.visit (node.condition) != BOOLEAN_TYPE.typeref): # type: ignore
 
-      raise SemanticException (node.condition, f'conditional value is not a \'{BOOLEAN_TYPE}\' value')
+      raise SemanticException (node.condition, f'conditional value is not a \'{BOOLEAN_TYPE.typeref}\' value')
 
     direct = self.visit (node.direct) # type: ignore
 
@@ -132,9 +134,9 @@ class TypingVisitor:
 
     value: TypeRef
 
-    if isinstance (node.value, bool): value = BOOLEAN_TYPE
-    elif isinstance (node.value, float): value = NUMBER_TYPE
-    elif isinstance (node.value, str): value = STRING_TYPE
+    if isinstance (node.value, bool): value = BOOLEAN_TYPE.typeref
+    elif isinstance (node.value, float): value = NUMBER_TYPE.typeref
+    elif isinstance (node.value, str): value = STRING_TYPE.typeref
     else: raise Exception (f'can not extract type info from {type (node.value)}')
 
     return value
@@ -308,11 +310,11 @@ class TypingVisitor:
 
       case '!':
 
-        if self.visit (node.argument) != BOOLEAN_TYPE: # type: ignore
+        if self.visit (node.argument) != BOOLEAN_TYPE.typeref: # type: ignore
 
           raise SemanticException (node, f'invalid \'{self.visit (node.operator)}\' for \'{node.operator}\' operator') # type: ignore
 
-        value = BOOLEAN_TYPE
+        value = BOOLEAN_TYPE.typeref
 
       case _: value = self.visit (node.argument) # type: ignore
 

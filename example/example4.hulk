@@ -1,0 +1,12 @@
+
+print (4 + 8);
+
+function max (a: number, b: number)
+{
+  if (a > b) a else b;
+}
+
+function min (a: number, b: number)
+{
+  if (a < b) a else b;
+}

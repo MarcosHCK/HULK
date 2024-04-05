@@ -19,7 +19,7 @@ from lexer.lexer import Lexer, Token
 from parser.parser import Parser
 from semantic.checker import SemanticChecker
 from typing import Iterable
-from viewer import PrintVisitor
+from utils.viewer import PrintVisitor
 import argparse
 
 def ignore (source: Iterable[Token]):
@@ -56,11 +56,13 @@ def program ():
       print ('\n'.join (PrintVisitor ().visit (ast)))
       print ('-*-*-')
 
-      SemanticChecker ().check (ast)
+      scope = SemanticChecker ().check (ast)
 
       print ('\n'.join (PrintVisitor ().visit (ast)))
       print ('-*-*-')
 
-      Codegen ()
+      module = Codegen ().generate (ast, scope)
+
+      print (module)
 
 program ()

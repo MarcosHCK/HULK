@@ -28,8 +28,9 @@ from parser.ast.loops import While
 from parser.ast.operator import BinaryOperator, UnaryOperator
 from parser.ast.param import Param, VarParam
 from parser.ast.value import BooleanValue, NewValue, NumberValue, StringValue, VariableValue
-from parser.types import BASE_TYPE, CTOR_NAME, ITERABLE_PROTOCOL, TypeRef
+from parser.types import TypeRef
 from typing import Any, List, Tuple
+from utils.builtins import BASE_TYPE, CTOR_NAME, ITERABLE_TYPE, MATH_POW
 
 def annot (first: Token):
 
@@ -54,7 +55,11 @@ def build_binary_operator (args: Tuple, first: Token, aat: int = 0, bat: int = 2
   a = getat (args, aat)
   b = getat (args, bat)
 
-  return BinaryOperator (op, a, b, **annot (first))
+  match op:
+
+    case '^': return Invoke (VariableValue (MATH_POW.value), [ a, b ])
+
+    case _: return BinaryOperator (op, a, b, **annot (first))
 
 def build_block (args: Tuple, first: Token, stmtsat: int = 0):
 
@@ -70,7 +75,7 @@ def build_class_access (args: Tuple, first: Token, baseat: int = 0, fieldat: int
 
 def build_conditional (args: Tuple, first: Token, branchesat: int = 0):
 
-  branches = getat (args, branchesat)
+  branches: List = getat (args, branchesat)
 
   head = branches [0]
   last = branches [-1]
@@ -111,10 +116,10 @@ def build_for (args: Tuple, first: Token, paramat: int = 0, blockat: int = 1):
   name = param.name
   typeref = param.typeref
 
-  itertyperef = TypeRef (ITERABLE_PROTOCOL, False, **annot (first))
-  iterparam = VarParam ('iterable', itertyperef, param.value, **annot (first))
-  iternext = Invoke (ClassAccess (VariableValue ('iterable'), 'next'), [], **annot (first))
-  itercurr = Invoke (ClassAccess (VariableValue ('iterable'), 'current'), [], **annot (first))
+  itertyperef = TypeRef (ITERABLE_TYPE.name, False, **annot (first))
+  iterparam = VarParam ('@iter', itertyperef, param.value, **annot (first))
+  iternext = Invoke (ClassAccess (VariableValue ('@iter'), 'next'), [], **annot (first))
+  itercurr = Invoke (ClassAccess (VariableValue ('@iter'), 'current'), [], **annot (first))
   letparam = VarParam (name, typeref, itercurr, **annot (first))
 
   return Let ([iterparam], Block ([ While (iternext, Block ([ Let ([letparam], block) ])) ]), **annot (first))
@@ -199,7 +204,7 @@ def build_typedecl (args: Tuple, first: Token, nameat: int = 0, paramsat: int = 
   body: Block = getat (args, bodyat)
   name: str = getvat (args, nameat)
   params: List[Param] = getat (args, paramsat)
-  parent: str = getvat (args, parentat, BASE_TYPE)
+  parent: str = getvat (args, parentat, BASE_TYPE.typeref)
   parentctor: List[Value] = getat (args, parentctorat)
 
   deb = annot (getat (args, parentctorat) or first)

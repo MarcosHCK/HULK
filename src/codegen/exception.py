@@ -15,33 +15,17 @@
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
 from parser.ast.base import AstNode
-from semantic.collector import CollectorVisitor
-from semantic.scope import Scope
-from semantic.typing import TypingVisitor
-from utils.builtins import builtin_types
-from utils.builtins import builtin_values
 
-class SemanticChecker:
+class CodegenException (Exception):
 
-  def __init__(self) -> None:
+  def __init__ (self, base: AstNode, message: str, *args: object) -> None:
 
-    scope = Scope ()
+    super ().__init__ (*args)
 
-    for builtin in builtin_types:
+    self.column = base.column
+    self.line = base.line
+    self.message = message
 
-      scope.addt (builtin.name, builtin.typeref)
+  def __str__ (self) -> str:
 
-    for builtin in builtin_values:
-
-      scope.addv (builtin.value, builtin.typeref)
-
-    self.scope = scope
-
-  def check (self, node: AstNode):
-
-    scope = self.scope.clone ()
-
-    CollectorVisitor (scope).visit (node) # type: ignore
-    TypingVisitor (scope).visit (node) # type: ignore
-
-    return scope
+    return f'{self.line}: {self.column}: {self.message}'

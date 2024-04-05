@@ -18,17 +18,6 @@ from typing import Any, Dict, List, Self
 
 CTOR_NAME = "@ctor"
 
-BASE_TYPENAME = 'object'
-BOOLEAN_TYPENAME = 'boolean'
-DEFAULT_TYPENAME = 'default'
-ITERABLE_PROTOCOL = 'iterable'
-NUMBER_TYPENAME = 'number'
-STRING_TYPENAME = 'string'
-
-BOOLEAN_FALSE = 'false'
-BOOLEAN_TRUE = 'true'
-DEFAULT_VALUE = 'default'
-
 class TypeRef:
 
   def clone (self, **kwargs):
@@ -181,11 +170,3 @@ class ProtocolType (CompositeType):
 def compare_types (refa: TypeRef, refb: TypeRef) -> bool:
 
   return refa.__eq__ (refb) or isinstance (refb, AnyType)
-
-BASE_TYPE = CompositeType (BASE_TYPENAME, { })
-BOOLEAN_TYPE = TypeRef (BOOLEAN_TYPENAME, False)
-DEFAULT_TYPE = TypeRef (DEFAULT_TYPENAME, False)
-NUMBER_TYPE = TypeRef (NUMBER_TYPENAME, False)
-STRING_TYPE = TypeRef (STRING_TYPENAME, False)
-
-BASE_TYPE.members [CTOR_NAME] = FunctionType (CTOR_NAME, [ ], BASE_TYPE)
