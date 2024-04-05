@@ -15,14 +15,16 @@
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
 from parser.ast.base import Value
+from parser.types import TypeRef
 
 class Indirection (Value):
 
-  def __init__ (self, base: Value, **kwargs):
+  def __init__ (self, base: Value, typeref: None | TypeRef = None, **kwargs):
 
     super ().__init__ (**kwargs)
 
     self.base = base
+    self.typeref = typeref
 
 class ClassAccess (Indirection):
 

@@ -14,19 +14,19 @@
  * You should have received a copy of the GNU General Public License
  * along with HULK.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <stdio.h>
 #include <math.h>
+#include <stdio.h>
 
 /* IO */
 
 int h_printn (double n)
 {
-  return (printf("%lf\n", n), 0);
+  return (printf("%lf\n", n), 1);
 }
 
 int h_prints (char* v)
 {
-  return (printf("%s\n", v), 0);
+  return (printf("%s\n", v), 1);
 }
 
 /* MATH */

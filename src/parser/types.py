@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
+from collections import OrderedDict
 from functools import reduce
 from typing import Any, Dict, List, Self
 
@@ -92,8 +93,20 @@ class CompositeType (TypeRef):
 
     super ().__init__ (name = name, vector = kwargs.get ('vector', False))
 
-    self.members = members
+    self.members = OrderedDict (members)
     self.parent = parent
+
+  def circular (self, parent: None | Self) -> bool:
+
+    while (first := parent) != None:
+
+      if compare_types (first, self):
+
+        return True
+
+      parent = first.parent
+
+    return False
 
   def get_ctor (self) -> None | TypeRef:
 

@@ -20,6 +20,21 @@ from parser.types import CTOR_NAME, CompositeType, FunctionType, ProtocolType, T
 from typing import Any, Dict, List
 import llvmlite.ir as ir
 
+class Struct:
+
+  def attribute (self, name: str) -> int: return self.attributes [name]
+  def function (self, name: str) -> int: return self.functions [name]
+
+  def gep (self, builder: ir.IRBuilder, value: ir.Value, index: int) -> ir.Value:
+
+    return builder.extract_value (value, index)
+
+  def __init__ (self, parent, attributes, functions):
+
+    self.attributes = attributes
+    self.functions = functions
+    self.parent = parent
+
 class Types:
 
   def __getitem__ (self, key: str) -> ir.Type:
@@ -29,6 +44,7 @@ class Types:
   def __init__ (self) -> None:
 
     self._store = { }
+    self._structs = { }
 
   def add (self, name: str, type_: ir.Type) -> None | ir.Type:
 
@@ -41,10 +57,8 @@ class Types:
 
     child = Types ()
 
-    for name, type_ in self._store.items ():
-
-      child._store [name] = type_
-
+    child._store = { **self._store }
+    child._structs = { **self._structs }
     return child
 
   def fit (self, context: ir.Context, typeref: TypeRef) -> ir.Type:
@@ -56,13 +70,18 @@ class Types:
         self._store [typeref.name] = (refty := context.get_identified_type (typeref.name))
 
         attributes = filter (lambda e: isinstance (e, FunctionType) == False, typeref.members.values ())
-        functions = filter (lambda e: isinstance (e, FunctionType) == True, typeref.members.values ())
+        functions = filter (lambda e: isinstance (e, FunctionType) == True and e.name != CTOR_NAME, typeref.members.values ())
 
         attributes = map (lambda e: self.fit (context, e), attributes) # type: ignore
         functions = reduce (lambda a, e: [ *self.fit_function (context, e), *a ], functions, []) # type: ignore
         functions = map (lambda e: ir.PointerType (e), functions)
 
         parent = ir.IntType (32) if not typeref.parent else self.fit (context, typeref.parent) # type: ignore
+
+        attributes = { e[0]: i for i, e in enumerate (filter (lambda e: isinstance (e[1], FunctionType) == False, typeref.members.items ())) }
+        functions = { e[0]: i for i, e in enumerate (filter (lambda e: isinstance (e[1], FunctionType) == True and e[1].name != CTOR_NAME, typeref.members.items ())) }
+
+        self._structs [typeref.name] = Struct (parent, attributes, functions)
 
         refty.set_body (parent, *attributes, *functions)
 
@@ -102,6 +121,10 @@ class Types:
   def get (self, key: str, default: Any = None) -> None | ir.Type:
 
     return self._store.get (key, default)
+
+  def struct (self, key: str) -> Struct:
+
+    return self._structs [key]
 
   @staticmethod
   def mangle (name:str, typeref: FunctionType) -> str:

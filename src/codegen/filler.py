@@ -92,13 +92,31 @@ class FillerVisitor:
     return value
 
   @visitor.when (ClassAccess)
-  def visit (self, builder: ir.IRBuilder, node: Conditional, frame: Frame, types: Types) -> ir.Value:
+  def visit (self, builder: ir.IRBuilder, node: ClassAccess, frame: Frame, types: Types) -> ir.Value:
+
+    assert (node.typeref)
+
+    base = self.visit (builder, node.base, frame.clone (mode = FrameMode.INDIRECT), types) # type: ignore
+    ref = types.struct (node.typeref.name)
 
     match frame.mode:
 
-      case FrameMode.NORMAL: raise Exception ('unimplemented')
-      case FrameMode.INDIRECT: raise Exception ('unimplemented')
-      case FrameMode.INVOKE: raise Exception ('unimplemented')
+      case FrameMode.NORMAL: return ref.gep (builder, base, ref.attribute (node.field))
+
+      case FrameMode.INVOKE:
+
+        if node.field != CTOR_NAME:
+
+          return ref.gep (builder, base, ref.function (node.field))
+        else:
+
+          name = f'{node.typeref.name}.{node.field}'
+          ctor = types.function (name, [ types[node.typeref.name] ])
+
+          print (f'{node.typeref.name}.{node.field}', ctor)
+          raise Exception ('unimplemented')
+
+      case _: raise Exception ('unsupported access')
 
   @visitor.when (Conditional)
   def visit (self, builder: ir.IRBuilder, node: Conditional, frame: Frame, types: Types) -> ir.Value:
@@ -169,23 +187,28 @@ class FillerVisitor:
 
     for signature, alt in alts.items ():
 
-      frame = frame.clone ()
+      d_frame = frame.clone ()
+      d_types = types.clone ()
+
       func: ir.Function = frame[signature] # type: ignore
 
       arguments = func.args if not self.compose else func.args [1:]
       implementor = ir.IRBuilder (func.append_basic_block ())
 
-      for name, type_, value in zip (map (lambda e: e.name, node.params), alt.args, func.args):
+      for name, type_, value in zip (map (lambda e: e.name, node.params), alt.args, arguments):
 
         implementor.store (value, (store := implementor.alloca (type_, 1)))
-        frame [name] = store
+        d_frame [name] = store
 
       if self.compose != None:
 
-        frame ['self'] = func.args [0]
-        frame ['base'] = func.args [0]
+        d_frame ['self'] = func.args [0]
+        d_frame ['base'] = func.args [0]
 
-      implementor.ret (self.visit (implementor, node.body, frame, types)) # type: ignore
+        d_types.add ('self', self.compose)
+        d_types.add ('base', self.compose)
+
+      implementor.ret (self.visit (implementor, node.body, d_frame, types)) # type: ignore
 
   @visitor.when (Invoke)
   def visit (self, builder: ir.IRBuilder, node: Invoke, frame: Frame, types: Types) -> ir.Value:
@@ -235,9 +258,7 @@ class FillerVisitor:
   @visitor.when (TypeDecl)
   def visit (self, builder: ir.IRBuilder, node: TypeDecl, frame: Frame, types: Types) -> None:
 
-    compose = types [node.name]
-
-    FillerVisitor (compose = compose).visit (builder, node.body, frame, types) # type: ignore
+    FillerVisitor (compose = types [node.name]).visit (builder, node.body, frame, types) # type: ignore
 
   @visitor.when (UnaryOperator)
   def visit (self, builder: ir.IRBuilder, node: UnaryOperator, frame: Frame, types: Types) -> ir.Value:

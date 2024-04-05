@@ -60,14 +60,9 @@ class CollectorVisitor:
 
       d_scope.variables [fnname] = alt
 
-      if self.compose != None:
-
-        d_scope.addv ('base', self.compose)
-        d_scope.addv ('self', self.compose)
-
       try:
 
-        TypingVisitor (d_scope).visit (FunctionDecl (fnname, node.params, node.typeref, node.body)) # type: ignore
+        TypingVisitor (d_scope, compose = self.compose).visit (node) # type: ignore
 
         d_types.fit (context, alt)
 

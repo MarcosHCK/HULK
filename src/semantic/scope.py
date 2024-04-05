@@ -22,8 +22,13 @@ class Scope:
 
   def __init__ (self) -> None:
 
+    self.pending = set ()
     self.types: Dict[str, TypeRef] = OrderedDict ()
     self.variables: Dict[str, TypeRef] = OrderedDict ()
+
+  def addc (self, name: str) -> None:
+
+    self.pending.add (name)
 
   def addt (self, name: str, typeref: TypeRef) -> None | TypeRef:
 
@@ -43,10 +48,15 @@ class Scope:
 
     child = Scope ()
 
+    child.pending = self.pending.copy ()
     child.types = self.types.copy ()
     child.variables = self.variables.copy ()
 
     return child
+
+  def diving (self, name: str) -> bool:
+
+    return name in self.pending
 
   def derive (self, typeref: TypeRef) -> TypeRef:
 

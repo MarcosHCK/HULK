@@ -19,10 +19,12 @@ from codegen.filler import FillerVisitor
 from codegen.frame import Frame
 from codegen.types import Types
 from parser.ast.base import AstNode
-from parser.types import FunctionType, ProtocolType
+from parser.ast.block import Block
+from parser.ast.decl import FunctionDecl
+from parser.types import CompositeType, FunctionType, ProtocolType
 from semantic.scope import Scope
 from typing import Dict
-from utils.builtins import BOOLEAN_TYPE
+from utils.builtins import BASE_TYPE, BOOLEAN_TYPE
 from utils.builtins import NUMBER_TYPE
 from utils.builtins import STRING_TYPE
 import llvmlite.ir as ir
@@ -34,11 +36,12 @@ class Codegen ():
 
     super ().__init__ ()
 
-    self.types = Types ()
+  @staticmethod
+  def initialize (context: ir.Context, frame: Frame, types: Types) -> None:
 
-    self.types.add (BOOLEAN_TYPE.name, ir.IntType (1))
-    self.types.add (NUMBER_TYPE.name, ir.DoubleType ())
-    self.types.add (STRING_TYPE.name, ir.PointerType (ir.IntType (8)))
+    types.add (BOOLEAN_TYPE.name, ir.IntType (1))
+    types.add (NUMBER_TYPE.name, ir.DoubleType ())
+    types.add (STRING_TYPE.name, ir.PointerType (ir.IntType (8)))
 
   def generate (self, ast: AstNode, scope: Scope) -> ir.Module:
 
@@ -49,7 +52,9 @@ class Codegen ():
     main = ir.Function (module, mainty, 'main')
 
     frame = Frame ()
-    types = self.types.clone ()
+    types = Types ()
+
+    Codegen.initialize (module.context, frame, types)
 
     CollectorVisitor ().visit (module.context, ast, frame, scope, types) # type: ignore
 

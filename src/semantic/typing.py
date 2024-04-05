@@ -107,6 +107,7 @@ class TypingVisitor:
 
       else:
 
+        node.typeref = base
         return member
 
   @visitor.when (Conditional)
@@ -290,6 +291,10 @@ class TypingVisitor:
     elif isinstance (node, TypeDecl) and not isinstance (parent, CompositeType):
 
       raise SemanticException (node, f'type can not inherit from a \'{parent}\' type')
+
+    elif value.circular (parent):
+
+      raise SemanticException (node, f'circular inheritance')
 
     value.parent = parent
 
