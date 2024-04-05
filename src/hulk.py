@@ -15,6 +15,8 @@
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
 from codegen.codegen import Codegen
+from codegen.runner import run
+from codegen.compile import compile
 from lexer.lexer import Lexer, Token
 from parser.parser import Parser
 from semantic.checker import SemanticChecker
@@ -62,7 +64,9 @@ def program ():
       print ('-*-*-')
 
       module = Codegen ().generate (ast, scope)
-
+      module = compile (module, 3)
       print (module)
+
+      print (run (module))
 
 program ()

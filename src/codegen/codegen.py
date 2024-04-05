@@ -25,8 +25,8 @@ from typing import Dict
 from utils.builtins import BOOLEAN_TYPE
 from utils.builtins import NUMBER_TYPE
 from utils.builtins import STRING_TYPE
-import llvmlite.binding as llvm
 import llvmlite.ir as ir
+import math
 
 class Codegen ():
 
@@ -44,8 +44,6 @@ class Codegen ():
 
     builder = ir.IRBuilder ()
     module = ir.Module ()
-
-    module.triple = llvm.get_default_triple ()
 
     mainty = ir.FunctionType (ir.IntType (32), [])
     main = ir.Function (module, mainty, 'main')
@@ -75,8 +73,13 @@ class Codegen ():
 
     builder.position_at_end (main.append_basic_block (name = 'entry'))
 
+    frame ['E'] = (e_store := builder.alloca (types [NUMBER_TYPE.name], 1, 'MATH_E'))
+    frame ['PI'] = (pi_store := builder.alloca (types [NUMBER_TYPE.name], 1, 'MATH_PI'))
+
+    builder.store (ir.Constant (types [NUMBER_TYPE.name], math.e), e_store)
+    builder.store (ir.Constant (types [NUMBER_TYPE.name], math.pi), pi_store)
+
     FillerVisitor ().visit (builder, ast, frame, types) # type: ignore
     builder.ret (ir.Constant (mainty.return_type, 0))
 
-    llvm.parse_assembly (str (module)).verify ()
     return module
