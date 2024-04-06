@@ -19,9 +19,9 @@ from typing import List
 
 class Invoke (Value):
 
-  def __init__ (self, target: Value, arguments: List[Value], **kwargs):
+  def __init__ (self, target: Value, arguments: List[Value], **kw):
 
-    super ().__init__ (**kwargs)
+    super ().__init__ (**kw)
 
     self.arguments = arguments
     self.target = target

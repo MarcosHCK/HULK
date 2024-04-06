@@ -18,18 +18,18 @@ from parser.ast.base import Value
 
 class UnaryOperator (Value):
 
-  def __init__ (self, operator: str, argument: Value, **kwargs):
+  def __init__ (self, operator: str, argument: Value, **kw):
 
-    super ().__init__ (**kwargs)
+    super ().__init__ (**kw)
 
     self.argument = argument
     self.operator = operator
 
 class BinaryOperator (Value):
 
-  def __init__ (self, operator: str, argument: Value, argument2: Value, **kwargs):
+  def __init__ (self, operator: str, argument: Value, argument2: Value, **kw):
 
-    super ().__init__ (**kwargs)
+    super ().__init__ (**kw)
 
     self.argument = argument
     self.argument2 = argument2

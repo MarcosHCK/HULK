@@ -15,29 +15,29 @@
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
 from parser.ast.base import Value
-from parser.types import TypeRef
+from parser.ast.type import Type
 
 class Indirection (Value):
 
-  def __init__ (self, base: Value, typeref: None | TypeRef = None, **kwargs):
+  def __init__ (self, base: Value, type_: None | Type = None, **kw):
 
-    super ().__init__ (**kwargs)
+    super ().__init__ (**kw)
 
     self.base = base
-    self.typeref = typeref
+    self.type_ = type_
 
 class ClassAccess (Indirection):
 
-  def __init__ (self, base: Value, field: str, **kwargs):
+  def __init__ (self, base: Value, field: str, **kw):
 
-    super ().__init__ (base, **kwargs)
+    super ().__init__ (base, **kw)
 
     self.field = field
 
 class VectorAccess (Indirection):
 
-  def __init__ (self, base: Value, index: Value, **kwargs):
+  def __init__ (self, base: Value, index: Value, **kw):
 
-    super ().__init__ (base, **kwargs)
+    super ().__init__ (base, **kw)
 
     self.index = index

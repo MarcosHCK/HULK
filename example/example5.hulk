@@ -21,3 +21,14 @@ type Simple
   change (n) => self.var := n;
   dump () => print (self.var);
 }
+
+type Simple2 (a) inherits Simple
+{
+  var2: number = a;
+  change (n) => self.var2 := n;
+}
+
+type Complex (a) inherits Simple2 (a + 2)
+{
+  selfish () => true;
+}

@@ -14,17 +14,13 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
-from ctypes import CFUNCTYPE, c_int32
-import llvmlite.binding as llvm
+from parser.ast.base import AstNode
 
-def run (module: llvm.ModuleRef) -> int:
+class Type (AstNode):
 
-  with llvm.create_mcjit_compiler (module, llvm.Target.from_default_triple ().create_target_machine ()) as jit:
+  def __init__(self, name: str, vector: bool, **kw) -> None:
 
-    jit.add_object_file ('hulklib.o')
-    jit.finalize_object ()
+    super ().__init__ (**kw)
 
-    cfunc = jit.get_function_address ('main')
-    cfunc = CFUNCTYPE (c_int32) (cfunc)
-
-    return cfunc ()
+    self.name = name
+    self.vector = vector

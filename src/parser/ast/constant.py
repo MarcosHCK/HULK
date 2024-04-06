@@ -19,8 +19,8 @@ from typing import Any
 
 class Constant (Value):
 
-  def __init__ (self, value: Any, **kwargs):
+  def __init__ (self, value: Any, **kw):
 
-    super ().__init__ (**kwargs)
+    super ().__init__ (**kw)
 
     self.value = value

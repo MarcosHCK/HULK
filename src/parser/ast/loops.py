@@ -21,6 +21,6 @@ from parser.ast.value import DefaultValue
 
 class While (Conditional):
 
-  def __init__ (self, condition: Value, body: Block, **kwargs):
+  def __init__ (self, condition: Value, body: Block, **kw):
 
-    super ().__init__ (condition = condition, direct = body, reverse = Block ([ DefaultValue () ]), **kwargs)
+    super ().__init__ (condition = condition, direct = body, reverse = Block ([ DefaultValue () ]), **kw)

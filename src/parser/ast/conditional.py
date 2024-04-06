@@ -19,9 +19,9 @@ from parser.ast.block import Block
 
 class Conditional (Value):
 
-  def __init__ (self, condition: Value, direct: Block, reverse: Block, **kwargs):
+  def __init__ (self, condition: Value, direct: Block, reverse: Block, **kw):
 
-    super ().__init__ (**kwargs)
+    super ().__init__ (**kw)
 
     self.condition = condition
     self.direct = direct

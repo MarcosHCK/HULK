@@ -1,8 +1,0 @@
-h_printn print[number,(boolean)]
-h_prints print[string,(boolean)]
-h_cos cos[number,(number)]
-h_exp exp[number,(number)]
-h_log log[number,number,(number)]
-h_pow pow[number,number,(number)]
-h_sin sin[number,(number)]
-h_sqrt sqrt[number,(number)]

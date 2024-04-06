@@ -26,7 +26,7 @@ from parser.ast.loops import While
 from parser.ast.operator import BinaryOperator, UnaryOperator
 from parser.ast.param import Param, VarParam
 from parser.ast.value import NewValue, VariableValue
-from parser.types import TypeRef
+from parser.ast.type import Type
 import utils.visitor as visitor
 
 class PrintVisitor (object):
@@ -119,10 +119,10 @@ class PrintVisitor (object):
 
     function.append (')')
 
-    if (node.typeref):
+    if (node.type_):
 
       function.append (': ')
-      function.extend (self.visit (node.typeref)) # type: ignore
+      function.extend (self.visit (node.type_)) # type: ignore
 
     function.append (' {')
 
@@ -180,7 +180,7 @@ class PrintVisitor (object):
 
     value = [ f'new ' ]
 
-    value.extend (self.visit (node.typeref)) # type: ignore
+    value.extend (self.visit (node.type_)) # type: ignore
     value.append (' (')
 
     for i, argument in enumerate (node.arguments):
@@ -200,10 +200,10 @@ class PrintVisitor (object):
 
     param = [ f'{node.name}' ]
 
-    if node.typeref:
+    if node.type_:
 
       param.append (': ')
-      param.extend (self.visit (node.typeref)) # type: ignore
+      param.extend (self.visit (node.type_)) # type: ignore
 
     return [ ''.join (param) ]
 
@@ -243,10 +243,10 @@ class PrintVisitor (object):
 
     return type_
 
-  @visitor.when (TypeRef)
-  def visit (self, node: TypeRef):
+  @visitor.when (Type)
+  def visit (self, node: Type):
 
-    return str (node)
+    return [ node.name ]
 
   @visitor.when (UnaryOperator)
   def visit (self, node: UnaryOperator):
@@ -268,7 +268,7 @@ class PrintVisitor (object):
 
     varparam = [ ]
 
-    param = Param (node.name, node.typeref)
+    param = Param (node.name, node.type_)
 
     varparam.extend (self.visit (param)) # type: ignore
     varparam.append (' = ')

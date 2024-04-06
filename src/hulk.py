@@ -14,14 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
-from codegen.codegen import Codegen
-from codegen.runner import run
-from codegen.compile import compile
 from lexer.lexer import Lexer, Token
 from parser.parser import Parser
-from semantic.checker import SemanticChecker
 from typing import Iterable
-from utils.viewer import PrintVisitor
+from parser.viewer import PrintVisitor
 import argparse
 
 def ignore (source: Iterable[Token]):
@@ -56,17 +52,6 @@ def program ():
       ast = Parser (tokens)
 
       print ('\n'.join (PrintVisitor ().visit (ast)))
-      print ('-*-*-')
-
-      scope = SemanticChecker ().check (ast)
-
-      print ('\n'.join (PrintVisitor ().visit (ast)))
-      print ('-*-*-')
-
-      module = Codegen ().generate (ast, scope)
-      module = compile (module, 3)
-      print (module)
-
-      print (run (module))
+      print ('--*-*-*-*-*--')
 
 program ()
