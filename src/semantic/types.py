@@ -14,17 +14,31 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
-from parser.ast.base import AstNode
-from semantic.type import NamedType, VectorType
+from semantic.type import Type, TypeDict
+from typing import Any, Dict, Iterator
 
-class TypeRef (NamedType, AstNode):
+class Types:
 
-  def __init__ (self, name: str, **kw) -> None:
+  def __getitem__ (self, key: str) -> Type:
 
-    super ().__init__ (name, **kw)
+    return self._store [key]
 
-  @staticmethod
-  def create (name: str, vector: bool, **kw):
+  def __init__ (self) -> None:
 
-    if not vector: return TypeRef (name, **kw)
-    else: return VectorType (TypeRef (name, **kw))
+    self._store: TypeDict = { }
+
+  def __iter__ (self) -> Iterator[str]:
+
+    return self._store.__iter__ ()
+
+  def __setitem__ (self, key: str, value: Type) -> None:
+
+    self._store [key] = value
+
+  def get (self, key: str, default: Any) -> None | Type:
+
+    return self._store.get (key, default)
+
+  def items (self):
+
+    return self._store.items ()

@@ -15,11 +15,12 @@
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
 from parser.ast.base import Value
+from parser.ast.indirection import ClassAccess
 from parser.ast.value import VariableValue
 
 class DestructiveAssignment (Value):
 
-  def __init__ (self, over: VariableValue, value: Value, **kw):
+  def __init__ (self, over: ClassAccess | VariableValue, value: Value, **kw):
 
     super ().__init__ (**kw)
 

@@ -26,18 +26,19 @@ from parser.ast.loops import While
 from parser.ast.operator import BinaryOperator, UnaryOperator
 from parser.ast.param import Param, VarParam
 from parser.ast.value import NewValue, VariableValue
-from parser.ast.type import Type
+from semantic.type import AnyType, NamedType, Type
+from semantic.typing import TypingVisitor
 import utils.visitor as visitor
 
 class PrintVisitor (object):
 
   @visitor.on ('node')
-  def visit (self, node: object):
+  def visit (self, node: object): # type: ignore
 
     pass
 
   @visitor.when (BinaryOperator)
-  def visit (self, node: BinaryOperator):
+  def visit (self, node: BinaryOperator): # type: ignore
 
     oper = [ ]
 
@@ -49,7 +50,7 @@ class PrintVisitor (object):
     return [ ''.join (oper) ]
 
   @visitor.when (Block)
-  def visit (self, node: Block):
+  def visit (self, node: Block): # type: ignore
 
     lines = [ ]
 
@@ -60,7 +61,7 @@ class PrintVisitor (object):
     return lines
 
   @visitor.when (ClassAccess)
-  def visit (self, node: ClassAccess):
+  def visit (self, node: ClassAccess): # type: ignore
 
     access = [ ]
 
@@ -70,12 +71,12 @@ class PrintVisitor (object):
     return [ ''.join (access) ]
 
   @visitor.when (Constant)
-  def visit (self, node: Constant):
+  def visit (self, node: Constant): # type: ignore
 
     return [ str (node.value) ]
 
   @visitor.when (Conditional)
-  def visit (self, node: Conditional):
+  def visit (self, node: Conditional): # type: ignore
 
     if_ = [ 'if (' ]
 
@@ -93,7 +94,7 @@ class PrintVisitor (object):
     return if_
 
   @visitor.when (DestructiveAssignment)
-  def visit (self, node: DestructiveAssignment):
+  def visit (self, node: DestructiveAssignment): # type: ignore
 
     assigment = [ ]
 
@@ -105,7 +106,7 @@ class PrintVisitor (object):
     return [ ''.join (assigment) ]
 
   @visitor.when (FunctionDecl)
-  def visit (self, node: FunctionDecl):
+  def visit (self, node: FunctionDecl): # type: ignore
 
     function = [ f'function {node.name} (' ]
 
@@ -134,7 +135,7 @@ class PrintVisitor (object):
     return function
 
   @visitor.when (Invoke)
-  def visit (self, node: Invoke):
+  def visit (self, node: Invoke): # type: ignore
 
     invoke = [ ]
 
@@ -154,7 +155,7 @@ class PrintVisitor (object):
     return [ ''.join (invoke) ]
 
   @visitor.when (Let)
-  def visit (self, node: Let):
+  def visit (self, node: Let): # type: ignore
 
     let = [ 'let ' ]
 
@@ -176,7 +177,7 @@ class PrintVisitor (object):
     return let
 
   @visitor.when (NewValue)
-  def visit (self, node: NewValue):
+  def visit (self, node: NewValue): # type: ignore
 
     value = [ f'new ' ]
 
@@ -196,7 +197,7 @@ class PrintVisitor (object):
     return [ ''.join (value) ]
 
   @visitor.when (Param)
-  def visit (self, node: Param):
+  def visit (self, node: Param): # type: ignore
 
     param = [ f'{node.name}' ]
 
@@ -208,7 +209,7 @@ class PrintVisitor (object):
     return [ ''.join (param) ]
 
   @visitor.when (ProtocolDecl)
-  def visit (self, node: ProtocolDecl):
+  def visit (self, node: ProtocolDecl): # type: ignore
 
     protocol = [ f'protocol {node.name}' ]
 
@@ -225,8 +226,13 @@ class PrintVisitor (object):
 
     return protocol
 
+  @visitor.when (Type)
+  def visit (self, type_: Type): # type: ignore
+
+    return [ TypingVisitor.describe (type_) ]
+
   @visitor.when (TypeDecl)
-  def visit (self, node: TypeDecl):
+  def visit (self, node: TypeDecl): # type: ignore
 
     type_ = [ f'type {node.name}' ]
 
@@ -243,13 +249,8 @@ class PrintVisitor (object):
 
     return type_
 
-  @visitor.when (Type)
-  def visit (self, node: Type):
-
-    return [ node.name ]
-
   @visitor.when (UnaryOperator)
-  def visit (self, node: UnaryOperator):
+  def visit (self, node: UnaryOperator): # type: ignore
 
     oper = [ ]
 
@@ -259,12 +260,12 @@ class PrintVisitor (object):
     return [ ''.join (oper) ]
 
   @visitor.when (VariableValue)
-  def visit (self, node: VariableValue):
+  def visit (self, node: VariableValue): # type: ignore
 
     return [ node.name ]
 
   @visitor.when (VarParam)
-  def visit (self, node: VarParam):
+  def visit (self, node: VarParam): # type: ignore
 
     varparam = [ ]
 

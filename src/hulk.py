@@ -20,6 +20,8 @@ from typing import Iterable
 from parser.viewer import PrintVisitor
 import argparse
 
+from semantic.check import SemanticCheck
+
 def ignore (source: Iterable[Token]):
 
   lastline = 1
@@ -50,6 +52,11 @@ def program ():
       lines = stream.readlines ()
       tokens = ignore (Lexer (lines)) 
       ast = Parser (tokens)
+
+      print ('\n'.join (PrintVisitor ().visit (ast)))
+      print ('--*-*-*-*-*--')
+
+      SemanticCheck ().check (ast)
 
       print ('\n'.join (PrintVisitor ().visit (ast)))
       print ('--*-*-*-*-*--')

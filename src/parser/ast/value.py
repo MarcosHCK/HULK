@@ -16,7 +16,7 @@
 #
 from parser.ast.base import Value
 from parser.ast.constant import Constant
-from parser.ast.type import Type
+from semantic.type import Type
 from typing import List
 
 class BooleanValue (Constant):

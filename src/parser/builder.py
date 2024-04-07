@@ -27,17 +27,10 @@ from parser.ast.let import Let
 from parser.ast.loops import While
 from parser.ast.operator import BinaryOperator, UnaryOperator
 from parser.ast.param import Param, VarParam
-from parser.ast.type import Type
+from parser.ast.type import TypeRef
 from parser.ast.value import BooleanValue, NewValue, NumberValue, StringValue, VariableValue
 from typing import Any, List, Tuple
-
-BASE_TYPE = 'object'
-ITERABLE_TYPE = 'iterable'
-MATH_POW = 'pow'
-
-CTOR_NAME = '@ctor'
-ITERABLE_NEXT = 'next'
-ITERABLE_CURRENT = 'current'
+from utils.builtin import BASE_NAME, BASE_TYPE, CTOR_NAME, ITERABLE_CURRENT, ITERABLE_NEXT, ITERABLE_TYPE, MATH_POW, SELF_NAME
 
 def annot (first: Token):
 
@@ -64,7 +57,7 @@ def build_binary_operator (args: Tuple, first: Token, aat: int = 0, bat: int = 2
 
   match op:
 
-    case '^': return Invoke (VariableValue (MATH_POW), [ a, b ])
+    case '^': return Invoke (VariableValue (MATH_POW.name), [ a, b ])
 
     case _: return BinaryOperator (op, a, b, **annot (first))
 
@@ -123,17 +116,17 @@ def build_for (args: Tuple, first: Token, paramat: int = 0, blockat: int = 1):
   name = param.name
   type_ = param.type_
 
-  itertyperef = Type (ITERABLE_TYPE, False, **annot (first))
+  itertyperef = TypeRef (ITERABLE_TYPE.name, **annot (first))
   iterparam = VarParam ('@iter', itertyperef, param.value, **annot (first))
-  iternext = Invoke (ClassAccess (VariableValue ('@iter'), 'next'), [], **annot (first))
-  itercurr = Invoke (ClassAccess (VariableValue ('@iter'), 'current'), [], **annot (first))
+  iternext = Invoke (ClassAccess (VariableValue ('@iter'), ITERABLE_NEXT), [], **annot (first))
+  itercurr = Invoke (ClassAccess (VariableValue ('@iter'), ITERABLE_CURRENT), [], **annot (first))
   letparam = VarParam (name, type_, itercurr, **annot (first))
 
   return Let ([iterparam], Block ([ While (iternext, Block ([ Let ([letparam], block) ])) ]), **annot (first))
 
 def build_functiondecl (args: Tuple, first: Token, nameat: int = 0, paramsat: int = 1, bodyat: int = 2, annotationat: int = 3):
 
-  annotation: Type = getat (args, annotationat)
+  annotation: TypeRef = getat (args, annotationat)
   body: Block = getat (args, bodyat)
   name: str = getvat (args, nameat)
   params: List[Param] = getat (args, paramsat)
@@ -177,7 +170,7 @@ def build_newvalue (args: Tuple, first: Token, typeat: int = 0, argumentsat: int
   arguments = getat (args, argumentsat)
   type_ = getvat (args, typeat)
 
-  return NewValue (Type (type_, False), arguments, **annot (first))
+  return NewValue (TypeRef (type_), arguments, **annot (first))
 
 def build_number_value (args: Tuple, first: Token, valueat: int = 0):
 
@@ -211,13 +204,13 @@ def build_typedecl (args: Tuple, first: Token, nameat: int = 0, paramsat: int = 
   body: Block = getat (args, bodyat)
   name: str = getvat (args, nameat)
   params: List[Param] = getat (args, paramsat)
-  parent: str = getvat (args, parentat, BASE_TYPE)
+  parent: str = getvat (args, parentat, BASE_TYPE.name)
   parentctor: List[Value] = getat (args, parentctorat)
 
   deb = annot (getat (args, parentctorat) or first)
 
-  ctorb = Block ([ Invoke (ClassAccess (VariableValue ('base'), CTOR_NAME), parentctor or [ ], **deb), VariableValue ('self') ])
-  ctor = FunctionDecl (CTOR_NAME, params or [ ], Type (name, False), ctorb)
+  ctorb = Block ([ Invoke (ClassAccess (VariableValue (BASE_NAME), CTOR_NAME), parentctor or [ ], **deb), VariableValue (SELF_NAME) ])
+  ctor = FunctionDecl (CTOR_NAME, params or [ ], TypeRef (name), ctorb)
 
   body = Block ([ ctor, *body.stmts ]) # type: ignore
   decl = TypeDecl (name, parent, body, **annot (first))
@@ -226,7 +219,7 @@ def build_typedecl (args: Tuple, first: Token, nameat: int = 0, paramsat: int = 
 
 def build_typeref (args: Tuple, first: Token, nameat: int = 0, vector: bool = False):
 
-  return Type (getvat (args, nameat), vector, **annot (first))
+  return TypeRef.create (getvat (args, nameat), vector, **annot (first))
 
 def build_unary_operator (args: Tuple, first: Token, opat = 0, aat: int = 1):
 

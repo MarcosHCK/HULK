@@ -15,7 +15,7 @@
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
 from parser.ast.base import Value
-from parser.ast.type import Type
+from semantic.type import Type
 
 class Param (Value):
 

@@ -15,16 +15,17 @@
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
 from parser.ast.base import AstNode
-from semantic.type import NamedType, VectorType
 
-class TypeRef (NamedType, AstNode):
+class SemanticException (Exception):
 
-  def __init__ (self, name: str, **kw) -> None:
+  def __init__ (self, base: AstNode, message: str, *args: object) -> None:
 
-    super ().__init__ (name, **kw)
+    super ().__init__ (*args)
 
-  @staticmethod
-  def create (name: str, vector: bool, **kw):
+    self.column = base.column
+    self.line = base.line
+    self.message = message
 
-    if not vector: return TypeRef (name, **kw)
-    else: return VectorType (TypeRef (name, **kw))
+  def __str__ (self) -> str:
+
+    return f'{self.line}: {self.column}: {self.message}'

@@ -17,7 +17,7 @@
 from parser.ast.base import AstNode
 from parser.ast.block import Block
 from parser.ast.param import Param
-from parser.ast.type import Type
+from semantic.type import Type
 from typing import List
 
 class FunctionDecl (AstNode):
