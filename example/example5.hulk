@@ -1,43 +1,13 @@
-print (5 * sin (PI * 2) + 3 ^ 2 + E);
+if (5 + 3 == 0) 4 else 2;
+
+let a = 5 in 6;
 
 function factorial (n) => if (n < 2) 1 else n * factorial (n - 1);
 
-let a = 4 in
-{
-  while (a < 8)
-    {
-
-      print (a);
-      a := a + 1;
-    };
-
-  print (factorial (a));
-  print (a := 9);
-};
-
-protocol Changable
-{
-  change (n: number): number;
-}
-
 type Simple
 {
-  var: number = 0;
+  var: number = 9;
+
   change (n) => self.var := n;
-  dump () => print (self.var);
+  dump () => self.var;
 }
-
-type Simple2 (a) inherits Simple
-{
-  var2: number = a;
-  change (n) => self.var2 := n;
-}
-
-type Complex (a) inherits Simple2 (a + 2)
-{
-  selfish () => true;
-}
-
-let a = 9 in print (a);
-
-let o = new Complex (5) in o.dump ();

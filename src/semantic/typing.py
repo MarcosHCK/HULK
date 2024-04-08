@@ -133,7 +133,7 @@ class TypingVisitor:
 
             for against in (want := [ NUMBER_TYPE, (type_ := BOOLEAN_TYPE) ]):
 
-              if not (Type.compare_types (arg1, against) and Type.compare_types (arg2, against)):
+              if not (Type.compare_types (arg1, against) or not Type.compare_types (arg2, against)):
 
                 arg1 = TypingVisitor.describe (arg1)
                 arg2 = TypingVisitor.describe (arg2)

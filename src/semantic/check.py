@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
+from collections import namedtuple
 from parser.ast.base import AstNode
 from semantic.collect import CollectStage, CollectVisitor
 from semantic.scope import Scope
@@ -24,6 +25,8 @@ from utils.builtin import builtin_constants
 from utils.builtin import builtin_types
 from utils.builtin import builtin_values
 
+Semantic = namedtuple ('Semantic', [ 'scope', 'types' ])
+
 class SemanticCheck:
 
   def check (self, ast: AstNode):
@@ -31,7 +34,7 @@ class SemanticCheck:
     scope = Scope ()
     types = Types ()
 
-    for name, type_ in builtin_constants.items ():
+    for name, (type_, _) in builtin_constants.items ():
       scope [name] = type_
     for name, type_ in builtin_types.items ():
       types [name] = type_
@@ -50,3 +53,5 @@ class SemanticCheck:
 
         done, _ = TypingVisitor ().visit (ast, scope, types) # type: ignore
         if done  == 0: break
+
+    return Semantic (scope = scope, types = types)

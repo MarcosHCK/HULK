@@ -15,6 +15,7 @@
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
 from collections import OrderedDict
+import math
 from semantic.type import AnyType
 from semantic.type import CompositeType
 from semantic.type import FunctionType
@@ -22,22 +23,22 @@ from semantic.type import ProtocolType
 from semantic.type import SimpleType
 from semantic.type import Type
 from semantic.type import UnionType
-from typing import Dict
+from typing import Any, Dict, Tuple
 
-class Builtin:
+class Constant:
 
   def __init__ (self, name: str, type_: Type):
 
     self.name = name
     self.type_ = type_
 
-builtin_constants: Dict[str, Type] = { }
+builtin_constants: Dict[str, Tuple[Type, Any]] = { }
 builtin_types: Dict[str, Type] = { }
 builtin_values: Dict[str, Type] = { }
 
-def BuiltinConstant (name: str, type_):
+def BuiltinConstant (name: str, type_, value):
 
-  builtin_constants [name] = type_
+  builtin_constants [name] = (type_, value)
   return type_
 
 def BuiltinType (type_):
@@ -75,8 +76,8 @@ ITERABLE_TYPE.methods [ITERABLE_CURRENT] = FunctionType (f'{ITERABLE_CURRENT}', 
 ITERABLE_TYPE.methods [ITERABLE_NEXT] = FunctionType (f'{ITERABLE_NEXT}', OrderedDict ({ 'a': AnyType () }), BOOLEAN_TYPE)
 PRINTABLE_TYPE.methods [PRINTABLE_TOSTRING] = FunctionType (f'{PRINTABLE_TOSTRING}', OrderedDict (), STRING_TYPE)
 
-MATH_E = BuiltinConstant ('E', NUMBER_TYPE)
-MATH_PI = BuiltinConstant ('PI', NUMBER_TYPE)
+MATH_E = BuiltinConstant ('E', NUMBER_TYPE, math.e)
+MATH_PI = BuiltinConstant ('PI', NUMBER_TYPE, math.pi)
 
 MATH_COS = BuiltinValue (FunctionType ('cos', OrderedDict ({ 'n': NUMBER_TYPE }), NUMBER_TYPE))
 MATH_EXP = BuiltinValue (FunctionType ('exp', OrderedDict ({ 'n': NUMBER_TYPE }), NUMBER_TYPE))

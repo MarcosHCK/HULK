@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
+from codegen.codegen import Codegen
 from lexer.lexer import Lexer, Token
 from parser.parser import Parser
 from typing import Iterable
@@ -56,9 +57,14 @@ def program ():
       print ('\n'.join (PrintVisitor ().visit (ast)))
       print ('--*-*-*-*-*--')
 
-      SemanticCheck ().check (ast)
+      semantic = SemanticCheck ().check (ast)
 
       print ('\n'.join (PrintVisitor ().visit (ast)))
+      print ('--*-*-*-*-*--')
+
+      module = Codegen ().generate (ast, semantic)
+
+      print (module)
       print ('--*-*-*-*-*--')
 
 program ()
