@@ -105,16 +105,18 @@ class CollectVisitor:
 
       case CollectStage.COLLECT:
 
-        type_ = node.type_ or AnyType ()
+        type_ = AnyType ()
 
       case CollectStage.LINK:
 
         if scope.get (name, None) == None:
 
-          scope [name] = (type_ := node.type_ or AnyType ())
+          type_ = AnyType () if not node.type_ else types [node.type_.name] # type: ignore
         else:
 
           raise SemanticException (node, f'redefining \'{name}\'')
+
+        node.type_ = type_
 
     return { node.name: type_ }
 

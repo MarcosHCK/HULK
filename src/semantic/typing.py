@@ -15,7 +15,6 @@
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
 from collections import OrderedDict
-from enum import Enum
 from functools import reduce
 from parser.ast.assignment import DestructiveAssignment
 from parser.ast.block import Block
@@ -51,7 +50,7 @@ class TypingVisitor:
       return (0 if Type.compare_types (of, actually, True) else 1, reduce (Type.merge, hints))
     elif isinstance (of, AnyType):
 
-      return (1, reduce (Type.merge, [ type_ for _, type_ in types.items () ]))
+      return (1, reduce (Type.merge, filter (lambda t: not isinstance (t, ProtocolType), [ type_ for _, type_ in types.items () ])))
 
     return (0, of)
 
@@ -186,7 +185,7 @@ class TypingVisitor:
 
     else:
 
-      if (member := type_ [node.field]) == None:
+      if (member := type_.get (node.field, None)) == None:
 
         raise SemanticException (node, f'trying to access a no existing field \'{node.field}\' in \'{TypingVisitor.describe (type_)}\'')
 
@@ -285,8 +284,8 @@ class TypingVisitor:
 
     if node.body != None:
 
-      done, type_ = self.visit (node.body, descent, types, prefix = prefix) # type: ignore
-      done, type_ = TypingVisitor.merge (value.type_, done, types, [ type_ ])
+      last, type_ = self.visit (node.body, descent, types, prefix = prefix) # type: ignore
+      done, type_ = TypingVisitor.merge (value.type_, done + last, types, [ type_ ])
 
       if not Type.compare_types (value.type_, type_):
 
@@ -399,10 +398,14 @@ class TypingVisitor:
   @visitor.when (Param)
   def visit (self, node: Param, scope: Scope, types: Types, prefix: List[CompositeType] = []) -> TypeReport: # type: ignore
 
-    done = 0
-    done, type_ = TypingVisitor.merge (node.type_ or AnyType (), done, types, [])
+    if len (prefix) == 0:
 
-    node.type_ = type_
+      type_ = node.type_ or AnyType ()
+    else:
+
+      type_ = prefix [-1].attributes [node.name]
+
+    done, type_ = TypingVisitor.merge (type_, 0, types, [])
 
     if isinstance (node, VarParam):
 
@@ -414,7 +417,12 @@ class TypingVisitor:
         raise SemanticException (node, f'can not assign a \'{TypingVisitor.describe (value)}\' value to a \'{TypingVisitor.describe (type_)}\' variable')
 
       done, type_ = TypingVisitor.merge (type_, done, types, [ value ])
-      node.type_ = type_
+
+    if len (prefix) > 0:
+
+      prefix[-1].attributes [node.name] = type_
+
+    node.type_ = type_
 
     return (done, type_)
 

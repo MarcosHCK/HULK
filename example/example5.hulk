@@ -1,13 +1,28 @@
 if (5 + 3 == 0) 4 else 2;
+while (3 == 2) 2;
 
 let a = 5 in 6;
 
 function factorial (n) => if (n < 2) 1 else n * factorial (n - 1);
 
+protocol Changable
+{
+  set (a: number): number;
+}
+
 type Simple
 {
   var: number = 9;
 
-  change (n) => self.var := n;
-  dump () => self.var;
+  set (n) => self.var := n;
+  get () => self.var;
+}
+
+type Complex (a: number)
+{
+  var = a;
+  base: Changable = new Simple ();
+
+  get () => self.var;
+  set (a) => self.var := a;
 }

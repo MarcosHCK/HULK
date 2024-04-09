@@ -17,15 +17,18 @@
 from collections import namedtuple
 from parser.ast.base import AstNode
 from semantic.collect import CollectStage, CollectVisitor
+from semantic.complain import ComplainVisitor
 from semantic.scope import Scope
 from semantic.transform import TransformStage, TransformVisitor
 from semantic.types import Types
 from semantic.typing import TypingVisitor
+from typing import List, Tuple
 from utils.builtin import builtin_constants
 from utils.builtin import builtin_types
 from utils.builtin import builtin_values
 
 Semantic = namedtuple ('Semantic', [ 'scope', 'types' ])
+Stage = Tuple[TransformStage, TransformStage, bool]
 
 class SemanticCheck:
 
@@ -44,14 +47,24 @@ class SemanticCheck:
     CollectVisitor (CollectStage.COLLECT).visit (ast, scope, types) # type: ignore
     CollectVisitor (CollectStage.LINK).visit (ast, scope, types) # type: ignore
 
-    for transfor_stage in [ TransformStage.TRIM_ATTRIBUTES, TransformStage.GUESS_ARGUMENTS ]:
+    stages: List[Stage] = [
 
-      collected = TransformVisitor (TransformStage.COLLECT_FUNCTIONS).visit (ast, scope, types) # type: ignore
-      collected = TransformVisitor (transfor_stage).visit (ast, scope, types, collected) # type: ignore
+      (TransformStage.COLLECT_FUNCTIONS, TransformStage.TRIM_ATTRIBUTES, True),
+      (TransformStage.COLLECT_FUNCTIONS, TransformStage.GUESS_ARGUMENTS, True),
+      (TransformStage.COLLECT_PARAMS, TransformStage.GUESS_PARAMS, True),
+      (TransformStage.COLLECT_FUNCTIONS, TransformStage.GUESS_ARGUMENTS, True),
+    ]
 
-      while True:
+    for collect_stage, transform_stage, check in stages:
+
+      collected = TransformVisitor (collect_stage).visit (ast, scope, types) # type: ignore
+      collected = TransformVisitor (transform_stage).visit (ast, scope, types, collected) # type: ignore
+
+      while check:
 
         done, _ = TypingVisitor ().visit (ast, scope, types) # type: ignore
         if done  == 0: break
+
+    ComplainVisitor ().visit (ast, scope, types) # type: ignore
 
     return Semantic (scope = scope, types = types)

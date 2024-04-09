@@ -30,27 +30,15 @@ class Type (object):
   @staticmethod
   def compare_types (a, b, strict: bool = False) -> bool:
 
-    if isinstance (a, AnyType):
-      
-      return True if not strict else isinstance (b, AnyType)
-    elif isinstance (a, UnionType):
-
-      return any ([ Type.compare_types (aa, b) for aa in a.types ]) and (True if not strict else isinstance (b, UnionType) and len (a.types) == len (b.types))
-    elif isinstance (a, CompositeType) and isinstance (b, CompositeType):
-
-      return a.name == b.name if strict else b.castableTo (a)
-    elif isinstance (a, NamedType) and isinstance (b, NamedType):
-
-      return a.name == b.name
-    elif isinstance (b, AnyType):
-
-      return True
-    elif isinstance (b, UnionType):
-
-      return any ([ Type.compare_types (a, bb) for bb in b.types ]) and (True if not strict else isinstance (a, UnionType) and len (a.types) == len (b.types))
-    else:
-
-      return a == b
+    if isinstance (a, AnyType): return True if not strict else isinstance (b, AnyType)
+    elif isinstance (a, UnionType): return any ([ Type.compare_types (t, b) for t in a.types ]) and (True if not strict else isinstance (b, UnionType) and len (a.types) == len (b.types))
+    elif isinstance (a, ProtocolType) and isinstance (b, ProtocolType): return a.name == b.name if strict else b.castableTo (a)
+    elif isinstance (a, ProtocolType) and isinstance (b, CompositeType): return a.name == b.name if strict else a.implementedBy (b)
+    elif isinstance (a, CompositeType) and isinstance (b, CompositeType): return a.name == b.name if strict else b.castableTo (a)
+    elif isinstance (a, NamedType) and isinstance (b, NamedType): return a.name == b.name
+    elif isinstance (b, AnyType): return True
+    elif isinstance (b, UnionType): return any ([ Type.compare_types (a, t) for t in b.types ]) and (True if not strict else isinstance (a, UnionType) and len (a.types) == len (b.types))
+    else: return a == b
 
   @staticmethod
   def merge (a, b):
@@ -156,7 +144,7 @@ class CompositeType (NamedType):
 
     return False
 
-  def get (self, key: str, default: Any) -> Any | Type:
+  def get (self, key: str, default: Any = None) -> Any | Type:
 
     return self.member (key, True) or default
 

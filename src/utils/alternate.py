@@ -18,31 +18,41 @@ from collections import OrderedDict
 from semantic.type import FunctionType, Type, UnionType
 from typing import Generator, List
 
-def alternate (typeref: FunctionType) -> Generator[FunctionType, None, None]:
+__all__ = [ 'alternate' ]
 
-  if len (typeref.params) == 0:
+def alternate (type_: Type) -> Generator[Type, None, None]:
 
-    for atyperef in alternative (typeref.type_):
+  if not isinstance (type_, FunctionType):
 
-      yield FunctionType (typeref.name, OrderedDict (), atyperef)
+    for ref in alternatehead (type_):
+
+      yield ref
 
   else:
 
-    keys = list (typeref.params.keys ())
+    if len (type_.params) == 0:
 
-    for atyperef in alternative (typeref.type_):
+      for atyperef in alternatehead (type_.type_):
 
-      for aparams in alternatives ([ *typeref.params.values () ]):
+        yield FunctionType (type_.name, OrderedDict (), atyperef)
 
-        params = OrderedDict ()
+    else:
 
-        for key, value in zip (keys, aparams):
+      keys = list (type_.params.keys ())
 
-          params [key] = value
+      for atyperef in alternatehead (type_.type_):
 
-        yield FunctionType (typeref.name, params, atyperef)
+        for aparams in alternatelist ([ *type_.params.values () ]):
 
-def alternative (ref: Type) -> Generator[Type, None, None]:
+          params = OrderedDict ()
+
+          for key, value in zip (keys, aparams):
+
+            params [key] = value
+
+          yield FunctionType (type_.name, params, atyperef)
+
+def alternatehead (ref: Type) -> Generator[Type, None, None]:
 
   if not isinstance (ref, UnionType):
 
@@ -54,11 +64,11 @@ def alternative (ref: Type) -> Generator[Type, None, None]:
 
       yield fellow
 
-def alternatives (lref: List[Type]) -> Generator[List[Type], None, None]:
+def alternatelist (lref: List[Type]) -> Generator[List[Type], None, None]:
 
   if len (lref) == 1:
 
-    for aret in alternative (lref[0]):
+    for aret in alternatehead (lref[0]):
 
       yield [ aret ]
 
@@ -67,8 +77,8 @@ def alternatives (lref: List[Type]) -> Generator[List[Type], None, None]:
     head = lref[0]
     tail = lref[1:]
 
-    for atail in alternatives (tail):
+    for atail in alternatelist (tail):
 
-      for ahead in alternative (head):
+      for ahead in alternatehead (head):
 
         yield [ ahead, *atail ]
