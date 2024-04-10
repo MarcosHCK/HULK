@@ -24,8 +24,8 @@ from semantic.types import Types
 from semantic.typing import TypingVisitor
 from typing import List, Tuple
 from utils.builtin import builtin_constants
+from utils.builtin import builtin_functions
 from utils.builtin import builtin_types
-from utils.builtin import builtin_values
 
 Semantic = namedtuple ('Semantic', [ 'scope', 'types' ])
 Stage = Tuple[TransformStage, TransformStage, bool]
@@ -41,7 +41,7 @@ class SemanticCheck:
       scope [name] = type_
     for name, type_ in builtin_types.items ():
       types [name] = type_
-    for name, type_ in builtin_values.items ():
+    for name, type_ in builtin_functions.items ():
       scope [name] = type_
 
     CollectVisitor (CollectStage.COLLECT).visit (ast, scope, types) # type: ignore

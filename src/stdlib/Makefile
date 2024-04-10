@@ -14,11 +14,17 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
-from parser.ast.base import AstNode
-from utils.exception import BasedException
 
-class SemanticException (BasedException):
+GCC = clang-14
+OBJCOPY = llvm-objcopy-14
 
-  def __init__ (self, base: AstNode, message: str, *args: object) -> None:
+STDLIB_SOURCE = stdlib.c
+SYMBOL_LIST = symbols.list
 
-    super ().__init__ (base, message, *args)
+%.o: %.c
+	$(GCC) -o $@ -c $<
+
+%.lib: %.o
+	$(OBJCOPY) --redefine-syms $(SYMBOL_LIST) $< $@
+
+all: stdlib.lib

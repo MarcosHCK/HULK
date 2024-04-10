@@ -34,7 +34,7 @@ class Constant:
 
 builtin_constants: Dict[str, Tuple[Type, Any]] = { }
 builtin_types: Dict[str, Type] = { }
-builtin_values: Dict[str, Type] = { }
+builtin_functions: Dict[str, Type] = { }
 
 def BuiltinConstant (name: str, type_, value):
 
@@ -46,9 +46,9 @@ def BuiltinType (type_):
   builtin_types [type_.name] = type_
   return type_
 
-def BuiltinValue (type_):
+def BuiltinFunction (type_):
 
-  builtin_values [type_.name] = type_
+  builtin_functions [type_.name] = type_
   return type_
 
 BASE_NAME = '@base'
@@ -79,13 +79,12 @@ PRINTABLE_TYPE.methods [PRINTABLE_TOSTRING] = FunctionType (f'{PRINTABLE_TOSTRIN
 MATH_E = BuiltinConstant ('E', NUMBER_TYPE, math.e)
 MATH_PI = BuiltinConstant ('PI', NUMBER_TYPE, math.pi)
 
-MATH_COS = BuiltinValue (FunctionType ('cos', OrderedDict ({ 'n': NUMBER_TYPE }), NUMBER_TYPE))
-MATH_EXP = BuiltinValue (FunctionType ('exp', OrderedDict ({ 'n': NUMBER_TYPE }), NUMBER_TYPE))
-MATH_LOG = BuiltinValue (FunctionType ('log', OrderedDict ({ 'n': NUMBER_TYPE, 'n2': NUMBER_TYPE }), NUMBER_TYPE))
-MATH_POW = BuiltinValue (FunctionType ('pow', OrderedDict ({ 'n': NUMBER_TYPE, 'n2': NUMBER_TYPE }), NUMBER_TYPE))
-MATH_RAND = BuiltinValue (FunctionType ('rand', OrderedDict (), NUMBER_TYPE))
-MATH_SIN = BuiltinValue (FunctionType ('sin', OrderedDict ({ 'n': NUMBER_TYPE }), NUMBER_TYPE))
-MATH_SQRT = BuiltinValue (FunctionType ('sqrt', OrderedDict ({ 'n': NUMBER_TYPE }), NUMBER_TYPE))
+MATH_COS = BuiltinFunction (FunctionType ('cos', OrderedDict ({ 'n': NUMBER_TYPE }), NUMBER_TYPE))
+MATH_EXP = BuiltinFunction (FunctionType ('exp', OrderedDict ({ 'n': NUMBER_TYPE }), NUMBER_TYPE))
+MATH_LOG = BuiltinFunction (FunctionType ('log', OrderedDict ({ 'n': NUMBER_TYPE, 'n2': NUMBER_TYPE }), NUMBER_TYPE))
+MATH_POW = BuiltinFunction (FunctionType ('pow', OrderedDict ({ 'n': NUMBER_TYPE, 'n2': NUMBER_TYPE }), NUMBER_TYPE))
+MATH_RAND = BuiltinFunction (FunctionType ('rand', OrderedDict (), NUMBER_TYPE))
+MATH_SIN = BuiltinFunction (FunctionType ('sin', OrderedDict ({ 'n': NUMBER_TYPE }), NUMBER_TYPE))
+MATH_SQRT = BuiltinFunction (FunctionType ('sqrt', OrderedDict ({ 'n': NUMBER_TYPE }), NUMBER_TYPE))
 
-STDLIB_BASECTOR = BuiltinValue (STDLIB_BASECTOR)
-STDLIB_PRINT = BuiltinValue (FunctionType ('print', OrderedDict ({ 'a': UnionType ([ NUMBER_TYPE, STRING_TYPE ]) }), BOOLEAN_TYPE))
+STDLIB_PRINT = BuiltinFunction (FunctionType ('print', OrderedDict ({ 'a': UnionType ([ NUMBER_TYPE, STRING_TYPE ]) }), BOOLEAN_TYPE))

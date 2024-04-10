@@ -14,10 +14,13 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
+from codegen.codegen import Codegen
+from codegen.compile import compile
+from codegen.run import run
 from lexer.lexer import Lexer, Token
 from parser.parser import Parser
-from typing import Iterable
 from parser.viewer import PrintVisitor
+from typing import Iterable
 import argparse
 
 from semantic.check import SemanticCheck
@@ -42,6 +45,7 @@ def program ():
   parser = argparse.ArgumentParser (description = 'hulk compiler')
 
   parser.add_argument ('input', help = 'input file', nargs = '*')
+  parser.add_argument ('-O', default = 0, help = 'optimization level', metavar = 'LEVEL', type = int)
 
   args = parser.parse_args ()
 
@@ -60,5 +64,17 @@ def program ():
 
       print ('\n'.join (PrintVisitor ().visit (ast)))
       print ('--*-*-*-*-*--')
+
+      module = Codegen ().generate (ast, semantic, name = str (file))
+
+      print (module)
+      print ('--*-*-*-*-*--')
+
+      module = compile (module, level = args.O)
+
+      print (module)
+      print ('--*-*-*-*-*--')
+
+      run (module, [ 'src/stdlib/stdlib.lib' ])
 
 program ()

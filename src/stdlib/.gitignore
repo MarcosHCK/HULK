@@ -14,11 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
-from parser.ast.base import AstNode
-from utils.exception import BasedException
 
-class SemanticException (BasedException):
-
-  def __init__ (self, base: AstNode, message: str, *args: object) -> None:
-
-    super ().__init__ (base, message, *args)
+stdlib.lib
+stdlib.o

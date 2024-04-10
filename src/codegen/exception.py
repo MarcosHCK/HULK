@@ -17,7 +17,7 @@
 from parser.ast.base import AstNode
 from utils.exception import BasedException
 
-class SemanticException (BasedException):
+class CodegenException (BasedException):
 
   def __init__ (self, base: AstNode, message: str, *args: object) -> None:
 
