@@ -87,4 +87,6 @@ MATH_RAND = BuiltinFunction (FunctionType ('rand', OrderedDict (), NUMBER_TYPE))
 MATH_SIN = BuiltinFunction (FunctionType ('sin', OrderedDict ({ 'n': NUMBER_TYPE }), NUMBER_TYPE))
 MATH_SQRT = BuiltinFunction (FunctionType ('sqrt', OrderedDict ({ 'n': NUMBER_TYPE }), NUMBER_TYPE))
 
+STDLIB_CONCAT = BuiltinFunction (FunctionType ('concat', OrderedDict ({ 'a': STRING_TYPE, 'b': STRING_TYPE }), STRING_TYPE))
+STDLIB_SITOS = BuiltinFunction (FunctionType ('sitos', OrderedDict ({ 'a': UnionType ([ NUMBER_TYPE, STRING_TYPE ]) }), STRING_TYPE))
 STDLIB_PRINT = BuiltinFunction (FunctionType ('print', OrderedDict ({ 'a': UnionType ([ NUMBER_TYPE, STRING_TYPE ]) }), BOOLEAN_TYPE))

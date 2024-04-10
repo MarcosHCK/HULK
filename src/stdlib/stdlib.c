@@ -16,7 +16,9 @@
  */
 #include <math.h>
 #include <stdio.h>
+#include <string.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 typedef struct _Object Object;
 
@@ -45,6 +47,34 @@ double log_number_number_number (double a, double b) { return log (a) / log (b);
 double pow_number_number_number (double a, double b) { return pow (a, b); }
 double sin_number_number (double n) { return sin (n); }
 double sqrt_number_number (double n) { return sqrt (n); }
+
+/* Strings */
+
+char* concat_string_string (const char* a, const char* b)
+{
+  int len1 = strlen (a);
+  int len2 = strlen (b);
+
+  char* buf = malloc (len1 + len2 + 1);
+
+  memcpy (& buf [0], a, len1);
+  memcpy (& buf [len1], b, len2);
+
+  return (buf [len1 + len2] = '\0', buf);
+}
+
+char* sitos_number_string (double a)
+{
+  char* buf = malloc (27);
+  return (sprintf (buf, "%lf%c", a, 0), buf);
+}
+
+char* sitos_string_string (const char* a)
+{
+  int len = strlen (a);
+  char* buf = malloc (len + 1);
+  return (memcpy (buf, a, len), buf [len] = '\0', buf);
+}
 
 /* Typing */
 

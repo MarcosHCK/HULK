@@ -25,10 +25,11 @@ class IRValueBase (object):
   @property
   def type (self): return self._type
 
-  def __init__ (self, type_: ir.Type, value: ir.Value) -> None:
+  def __init__ (self, type_: ir.Type, value: ir.Value, managed: bool = False) -> None:
 
     super ().__init__ ()
 
+    self._managed = managed
     self._type = type_
     self._value = value
 
@@ -41,11 +42,11 @@ class IRValueBase (object):
 
 class IRReference (IRValueBase):
 
-  def __init__ (self, value: ir.Value) -> None:
+  def __init__ (self, value: ir.Value, managed: bool = False) -> None:
 
     assert (isinstance (valuety := value.type, ir.PointerType)) # type: ignore
 
-    super ().__init__ (valuety.pointee, value)
+    super ().__init__ (valuety.pointee, value, managed = managed)
 
   def address (self, builder: ir.IRBuilder): return self._value
   def store (self, builder: ir.IRBuilder, value: ir.Value): builder.store (value, self.address (builder))
@@ -59,9 +60,9 @@ class IRValue (IRValueBase):
 
 class IRVariable (IRReference):
 
-  def __init__ (self, builder: ir.IRBuilder, type_: ir.Type) -> None:
+  def __init__ (self, builder: ir.IRBuilder, type_: ir.Type, managed: bool = False) -> None:
 
-    super ().__init__ (builder.alloca (type_, 1))
+    super ().__init__ (builder.alloca (type_, 1), managed = managed)
 
   @staticmethod
   def create (builder: ir.IRBuilder, value: ir.Value):

@@ -14,8 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
-from codegen.function import IRFunction, IRMethod
-from codegen.value import IRReference, IRValue, IRValueBase
+from codegen.function import IRMethod
+from codegen.value import IRReference, IRValueBase
 from collections import namedtuple
 from enum import Enum
 from typing import Dict, List, Self

@@ -106,20 +106,22 @@ class GenerateVisitor:
 
         match node.operator:
 
-          case '+': return IRValue (builder.fadd (lhs.value (builder), rhs.value (builder))) # type: ignore
-          case '-': return IRValue (builder.fsub (lhs.value (builder), rhs.value (builder))) # type: ignore
-          case '*': return IRValue (builder.fmul (lhs.value (builder), rhs.value (builder))) # type: ignore
-          case '/': return IRValue (builder.fdiv (lhs.value (builder), rhs.value (builder))) # type: ignore
-          case '%': return IRValue (builder.frem (lhs.value (builder), rhs.value (builder))) # type: ignore
+          case '+': result = IRValue (builder.fadd (lhs.value (builder), rhs.value (builder))) # type: ignore
+          case '-': result = IRValue (builder.fsub (lhs.value (builder), rhs.value (builder))) # type: ignore
+          case '*': result = IRValue (builder.fmul (lhs.value (builder), rhs.value (builder))) # type: ignore
+          case '/': result = IRValue (builder.fdiv (lhs.value (builder), rhs.value (builder))) # type: ignore
+          case '%': result = IRValue (builder.frem (lhs.value (builder), rhs.value (builder))) # type: ignore
 
-          case '&': return IRValue (builder.and_ (lhs.value (builder), rhs.value (builder))) # type: ignore
-          case '|': return IRValue (builder.or_ (lhs.value (builder), rhs.value (builder))) # type: ignore
+          case '&': result = IRValue (builder.and_ (lhs.value (builder), rhs.value (builder))) # type: ignore
+          case '|': result = IRValue (builder.or_ (lhs.value (builder), rhs.value (builder))) # type: ignore
 
           case '==' | '!=' | '<=' | '>=' | '<' | '>':
 
-            return IRValue (builder.fcmp_ordered (node.operator, lhs.value (builder), rhs.value (builder)))
+            result = IRValue (builder.fcmp_ordered (node.operator, lhs.value (builder), rhs.value (builder)))
 
           case _: raise Exception (f'unimplemented operator \'{node.operator}\'')
+
+    return result
 
   @visitor.when (Block)
   def visit (self, node: Block, builder: ir.IRBuilder, frame: IRFrame, types: IRType, prefix: List[IRType] = []) -> VisitResult: # type: ignore
@@ -128,7 +130,7 @@ class GenerateVisitor:
 
     for stmt in node.stmts:
 
-      if (last := self.visit (stmt, builder, frame, types, prefix = prefix)) != None: # type: ignore
+      if isinstance (last := self.visit (stmt, builder, frame, types, prefix = prefix), IRValueBase): # type: ignore
         value = last
 
     return value # type: ignore
@@ -180,10 +182,33 @@ class GenerateVisitor:
   @visitor.when (Constant)
   def visit (self, node: Constant, builder: ir.IRBuilder, frame: IRFrame, types: IRTypes, prefix: List[IRType] = []) -> VisitResult: # type: ignore
 
-    if isinstance (node.value, bool): return IRValue (ir.Constant (types [BOOLEAN_TYPE.name], 1 if node.value else 0))
-    elif isinstance (node.value, float): return IRValue (ir.Constant (types [NUMBER_TYPE.name], node.value))
-    elif isinstance (node.value, str): return IRValue (ir.Constant (types [STRING_TYPE.name], node.value.encode ('utf-8')))
-    else: raise CodegenException (node, f'unknown constant type \'{type (node.value)}\'')
+    if isinstance (node.value, bool):
+
+      return IRValue (ir.Constant (types [BOOLEAN_TYPE.name], 1 if node.value else 0))
+
+    elif isinstance (node.value, float):
+
+      return IRValue (ir.Constant (types [NUMBER_TYPE.name], node.value))
+
+    elif isinstance (node.value, str):
+
+      assert (isinstance (module := builder.module, ir.Module))
+
+      value = node.value.encode ('utf-8')
+
+      refty: ir.PointerType = types [STRING_TYPE.name] # type: ignore
+      name: str = module.get_unique_name ('const_string')
+
+      ref = ir.GlobalVariable (module, (arrty := ir.ArrayType (refty.pointee, 1 + len (value))), name)
+
+      ref.initializer = ir.Constant (arrty, [ b for b in value ] + [ 0 ]) # type: ignore
+      ref.global_constant = True
+
+      return IRValue (builder.bitcast (ref, refty)) # type: ignore
+
+    else:
+
+      raise CodegenException (node, f'unknown constant type \'{type (node.value)}\'')
 
   @visitor.when (DestructiveAssignment)
   def visit (self, node: DestructiveAssignment, builder: ir.IRBuilder, frame: IRFrame, types: IRTypes, prefix: List[IRType] = []) -> VisitResult: # type: ignore

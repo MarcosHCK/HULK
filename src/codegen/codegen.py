@@ -42,7 +42,7 @@ class Codegen:
     pass
 
   @staticmethod
-  def constant (module: ir.Module, name: str, frame: IRFrame, type: ir.Type, value: Any):
+  def constant (module: ir.Module, name: str, type: ir.Type, value: Any):
 
     var = ir.GlobalVariable (module, type, name)
     val = ir.Constant (type, value)
@@ -50,9 +50,7 @@ class Codegen:
     var.global_constant = True
     var.initializer = val # type: ignore
 
-    frame [name] = IRReference (var)
-
-    return var
+    return IRReference (var)
 
   @staticmethod
   def initialize (module: ir.Module, frame: IRFrame, types: IRTypes):
@@ -71,7 +69,7 @@ class Codegen:
 
     for name, (type_, value) in builtin_constants.items ():
 
-      frame [name] = Codegen.constant (module, name, frame, types [type_.name], value) # type: ignore
+      frame [name] = Codegen.constant (module, name, types [type_.name], value) # type: ignore
 
     for name, type_ in builtin_functions.items ():
 
@@ -117,7 +115,6 @@ class Codegen:
     CollectVisitor (stage = CollectStage.COLLECT).visit (ast, module, semantic, frame, types) # type: ignore
     CollectVisitor (stage = CollectStage.LINK).visit (ast, module, semantic, frame, types) # type: ignore
     CollectVisitor (stage = CollectStage.COMPLETE).visit (ast, module, semantic, frame, types) # type: ignore
-
     GenerateVisitor ().visit (ast, builder, frame, types) # type: ignore
 
     builder.ret_void ()

@@ -20,6 +20,7 @@ from parser.ast.base import AstNode
 from parser.ast.base import Value
 from parser.ast.block import Block
 from parser.ast.conditional import Conditional
+from parser.ast.constant import Constant
 from parser.ast.decl import FunctionDecl, ProtocolDecl, TypeDecl
 from parser.ast.indirection import ClassAccess
 from parser.ast.invoke import Invoke
@@ -30,7 +31,7 @@ from parser.ast.param import Param, VarParam
 from parser.ast.type import TypeRef
 from parser.ast.value import BooleanValue, NewValue, NumberValue, StringValue, VariableValue
 from typing import Any, List, Tuple
-from utils.builtin import BASE_NAME, BASE_TYPE, CTOR_NAME, ITERABLE_CURRENT, ITERABLE_NEXT, ITERABLE_TYPE, MATH_POW, SELF_NAME
+from utils.builtin import BASE_NAME, BASE_TYPE, CTOR_NAME, ITERABLE_CURRENT, ITERABLE_NEXT, ITERABLE_TYPE, MATH_POW, SELF_NAME, STDLIB_CONCAT, STDLIB_SITOS
 
 def annot (first: Token):
 
@@ -57,7 +58,21 @@ def build_binary_operator (args: Tuple, first: Token, aat: int = 0, bat: int = 2
 
   match op:
 
-    case '^': return Invoke (VariableValue (MATH_POW.name), [ a, b ])
+    case '^': return Invoke (VariableValue (MATH_POW.name, **annot (first)), [ a, b ], **annot (first))
+
+    case '@' | '@@':
+
+      var1 = Invoke (VariableValue (STDLIB_SITOS.name, **annot (first)), [ a ], **annot (first))
+      var2 = Invoke (VariableValue (STDLIB_SITOS.name, **annot (first)), [ b ], **annot (first))
+
+      if op == '@@':
+
+        var11 = var1
+        var12 = Invoke (VariableValue (STDLIB_SITOS.name, **annot (first)), [ Constant ('') ], **annot (first))
+
+        var1 = Invoke (VariableValue (STDLIB_CONCAT.name), [ var11, var12 ], **annot (first))
+
+      return Invoke (VariableValue (STDLIB_CONCAT.name), [ var1, var2 ], **annot (first))
 
     case _: return BinaryOperator (op, a, b, **annot (first))
 

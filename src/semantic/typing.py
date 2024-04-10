@@ -134,23 +134,6 @@ class TypingVisitor:
 
         match node.operator:
 
-          case '@' | '@@':
-
-            for against in (want := [ NUMBER_TYPE, STRING_TYPE, PRINTABLE_TYPE ]):
-
-              if Type.compare_types (against, arg1): # type: ignore
-
-                wanted = f'{", ".join ([ *map (lambda a: TypingVisitor.describe (a), want[:-1]) ])}, or {TypingVisitor.describe (want[-1])}'
-                raise SemanticException (node.argument2, f'expecting a \'{wanted}\' type, got \'{TypingVisitor.describe (arg1)}\'')
-
-              if Type.compare_types (against, arg2): # type: ignore
-
-                wanted = f'{", ".join ([ *map (lambda a: TypingVisitor.describe (a), want[:-1]) ])}, or {TypingVisitor.describe (want[-1])}'
-                raise SemanticException (node.argument2, f'expecting a \'{wanted}\' type, got \'{TypingVisitor.describe (arg2)}\'')
-
-            done = done + last1 + last2
-            type_ = STRING_TYPE
-
           case '==' | '!=':
 
             for against in (want := [ NUMBER_TYPE, (type_ := BOOLEAN_TYPE) ]):
