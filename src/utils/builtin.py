@@ -73,7 +73,7 @@ STRING_TYPE = BuiltinType (SimpleType ('string'))
 
 BASE_TYPE.methods [CTOR_NAME] = (STDLIB_BASECTOR := FunctionType (f'{CTOR_NAME}', OrderedDict (), BASE_TYPE))
 ITERABLE_TYPE.methods [ITERABLE_CURRENT] = FunctionType (f'{ITERABLE_CURRENT}', OrderedDict (), AnyType ())
-ITERABLE_TYPE.methods [ITERABLE_NEXT] = FunctionType (f'{ITERABLE_NEXT}', OrderedDict ({ 'a': AnyType () }), BOOLEAN_TYPE)
+ITERABLE_TYPE.methods [ITERABLE_NEXT] = FunctionType (f'{ITERABLE_NEXT}', OrderedDict (), BOOLEAN_TYPE)
 PRINTABLE_TYPE.methods [PRINTABLE_TOSTRING] = FunctionType (f'{PRINTABLE_TOSTRING}', OrderedDict (), STRING_TYPE)
 
 MATH_E = BuiltinConstant ('E', NUMBER_TYPE, math.e)

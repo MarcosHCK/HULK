@@ -19,6 +19,7 @@ from enum import Enum
 from parser.ast.base import AstNode
 from parser.ast.block import Block
 from parser.ast.decl import FunctionDecl, ProtocolDecl, TypeDecl
+from parser.ast.let import Let
 from parser.ast.param import Param
 from parser.ast.type import TypeRef
 from semantic.exception import SemanticException
@@ -95,6 +96,13 @@ class CollectVisitor:
             type_.params [param.name] = AnyType () if not param.type_ else types [param.type_.name]
 
     return { node.name: type_ }
+
+  @visitor.when (Let)
+  def visit (self, node: Let, scope: Scope, types: Types, prefix: List[str] = []) -> TypeDict: # type: ignore
+
+    for param in node.params:
+
+      self.visit (param, scope, types, prefix = prefix) # type: ignore
 
   @visitor.when (Param)
   def visit (self, node: Param, scope: Scope, types: Types, prefix: List[str] = []) -> TypeDict: # type: ignore

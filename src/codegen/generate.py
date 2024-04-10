@@ -286,10 +286,15 @@ class GenerateVisitor:
 
     assert (isinstance (type_ := types [node.type_.name], IRType)) # type: ignore
 
-    self_: IRReference = type_.create (builder)
-    ctor: IRFunction = frame ['.'.join ([ *map (lambda a: a.name, [ *prefix, type_ ]), CTOR_NAME ])] # type: ignore
+    arguments: List[IRValueBase]
+    constructor: IRFunction
 
-    return IRValue (ctor.call (builder, [ self_.address (builder) ]))
+    self_: IRReference = type_.create (builder)
+
+    arguments = map (lambda a: self.visit (a, builder, frame, types, prefix = prefix), node.arguments) # type: ignore
+    constructor = frame ['.'.join ([ *map (lambda a: a.name, [ *prefix, type_ ]), CTOR_NAME ])] # type: ignore
+
+    return IRValue (constructor.call (builder, [ self_.address (builder), *[ v.value (builder) for v in arguments ] ]))
 
   @visitor.when (TypeDecl)
   def visit (self, node: TypeDecl, builder: ir.IRBuilder, frame: IRFrame, types: IRTypes, prefix: List[IRType] = []) -> VisitResult: # type: ignore

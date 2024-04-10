@@ -35,9 +35,9 @@ class Type (object):
     elif isinstance (a, ProtocolType) and isinstance (b, ProtocolType): return a.name == b.name if strict else b.castableTo (a)
     elif isinstance (a, ProtocolType) and isinstance (b, CompositeType): return a.name == b.name if strict else a.implementedBy (b)
     elif isinstance (a, CompositeType) and isinstance (b, CompositeType): return a.name == b.name if strict else b.castableTo (a)
-    elif isinstance (a, NamedType) and isinstance (b, NamedType): return a.name == b.name
-    elif isinstance (b, AnyType): return True
+    elif isinstance (b, AnyType): return True if not strict else isinstance (a, AnyType)
     elif isinstance (b, UnionType): return any ([ Type.compare_types (a, t) for t in b.types ]) and (True if not strict else isinstance (a, UnionType) and len (a.types) == len (b.types))
+    elif isinstance (b, NamedType) and isinstance (a, NamedType): return a.name == b.name
     else: return a == b
 
   @staticmethod
@@ -199,7 +199,7 @@ class ProtocolType (CompositeType):
       if not Type.compare_types (other.get (name, None), type_):
         return False
 
-    return self.parent == None or self.parent.implementedBy (other)
+    return True if self.parent == None else self.parent.implementedBy (other)
 
 class Ref (NamedType):
 

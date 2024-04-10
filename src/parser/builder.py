@@ -131,8 +131,7 @@ def build_for (args: Tuple, first: Token, paramat: int = 0, blockat: int = 1):
   name = param.name
   type_ = param.type_
 
-  itertyperef = TypeRef (ITERABLE_TYPE.name, **annot (first))
-  iterparam = VarParam ('@iter', itertyperef, param.value, **annot (first))
+  iterparam = VarParam ('@iter', None, param.value, **annot (first))
   iternext = Invoke (ClassAccess (VariableValue ('@iter'), ITERABLE_NEXT), [], **annot (first))
   itercurr = Invoke (ClassAccess (VariableValue ('@iter'), ITERABLE_CURRENT), [], **annot (first))
   letparam = VarParam (name, type_, itercurr, **annot (first))

@@ -1,38 +1,15 @@
-print (factorial (9));
-
-let a = 2 in {
-
-  print (
-    while (a < 10)
-      {
-        a := a + 1;
-      }
-  );
-};
-
 function factorial (n) => if (n < 2) 1 else n * factorial (n - 1);
 
-protocol Changable
+type Range (from: number, to: number)
 {
-  set (a: number): number;
+  current_ = from - 1;
+  top_ = to + 1;
+
+  current () => self.current_;
+  next () => self.top_ > (self.current_ := self.current_ + 1);
 }
 
-type Simple
+for (n in new Range (1, 11))
 {
-  var: number = 9;
-
-  set (n) => self.var := n;
-  get () => self.var;
-  dump () => print (self.var);
-}
-
-let o = new Simple () in {
-
-  o.dump ();
-  o.set (44);
-  o.dump ();
+  print ("factorial (" @ n @ "): " @ factorial (n));
 };
-
-print ("marcos" @ "23");
-print ("perez");
-print ("lorenzo");
