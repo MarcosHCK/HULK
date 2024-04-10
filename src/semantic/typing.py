@@ -94,14 +94,37 @@ class TypingVisitor:
 
       case 'as' | 'is':
 
-        if not (isinstance (node.argument2, TypeRef)):
+        if not (isinstance (node.argument2, Type)):
 
           raise SemanticException (node.argument2, 'expecting a type')
 
         match node.operator:
 
-          case 'as': type_ = types [node.argument2.name] # type: ignore
-          case 'is': type_ = BOOLEAN_TYPE
+          case 'as':
+
+            last, arg1 = self.visit (node.argument, scope, types, prefix = prefix) # type: ignore
+
+            arg2 = node.argument2 if not isinstance (node.argument2, TypeRef) else types [node.argument2.name]
+            done = last + done
+
+            if not isinstance (arg1, CompositeType):
+
+              raise SemanticException (node.argument, f'can not cast a non-object type \'{TypingVisitor.describe (arg1)}\'')
+
+            if not isinstance (arg2, CompositeType):
+
+              raise SemanticException (node.argument, f'can not cast an object to a non-object type \'{TypingVisitor.describe (arg2)}\'')
+
+            type_ = arg2
+
+          case 'is':
+
+            arg2 = node.argument2 if not isinstance (node.argument2, TypeRef) else types [node.argument2.name]
+            type_ = BOOLEAN_TYPE
+
+            if not isinstance (arg2, CompositeType):
+
+              raise SemanticException (node.argument, f'can not cast an object to a non-object type \'{TypingVisitor.describe (arg2)}\'')
 
       case _:
 
@@ -318,6 +341,10 @@ class TypingVisitor:
     if not isinstance (target, FunctionType):
 
       raise SemanticException (node, f'attempt to call a \'{TypingVisitor.describe (target)}\' value')
+
+    elif len (arguments) != len (target.params):
+
+      raise SemanticException (node, f'{target.name} function have {len (target.params)} arguments, got {len (arguments)}')
     
     elif any ([ not Type.compare_types (a, b) for a, b in zip (arguments, target.params.values ()) ]):
 
