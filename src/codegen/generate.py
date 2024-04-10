@@ -40,22 +40,6 @@ from utils.builtin import CTOR_NAME
 import llvmlite.ir as ir
 import utils.visitor as visitor
 
-VisitResult = IRValueBase
-
-class Destroyed (Exception):
-
-  @property
-  def node (self): return self._node
-  @property
-  def value (self): return self._value
-
-  def __init__(self, node: AstNode, value: IRValueBase, *args: object) -> None:
-    
-    super ().__init__ (*args)
-
-    self._node = node
-    self._value = value
-
 class GenerateVisitor:
 
   @staticmethod
@@ -86,12 +70,12 @@ class GenerateVisitor:
         builder.store (fields [method_name] [functy].function, store)
 
   @visitor.on ('node')
-  def visit (self, node: AstNode, builder: ir.IRBuilder, frame: IRFrame, types: IRType, prefix: List[IRType] = []) -> VisitResult: # type: ignore
+  def visit (self, node: AstNode, builder: ir.IRBuilder, frame: IRFrame, types: IRType, prefix: List[IRType] = []) -> IRValueBase: # type: ignore
 
     raise CodegenException (node, 'falling through')
 
   @visitor.when (BinaryOperator)
-  def visit (self, node: BinaryOperator, builder: ir.IRBuilder, frame: IRFrame, types: IRTypes, prefix: List[IRType] = []) -> VisitResult: # type: ignore
+  def visit (self, node: BinaryOperator, builder: ir.IRBuilder, frame: IRFrame, types: IRTypes, prefix: List[IRType] = []) -> IRValueBase: # type: ignore
 
     match node.operator:
 
@@ -124,7 +108,7 @@ class GenerateVisitor:
     return result
 
   @visitor.when (Block)
-  def visit (self, node: Block, builder: ir.IRBuilder, frame: IRFrame, types: IRType, prefix: List[IRType] = []) -> VisitResult: # type: ignore
+  def visit (self, node: Block, builder: ir.IRBuilder, frame: IRFrame, types: IRType, prefix: List[IRType] = []) -> IRValueBase: # type: ignore
 
     value = None
 
@@ -166,7 +150,7 @@ class GenerateVisitor:
     return IRValue (phi)
 
   @visitor.when (ClassAccess)
-  def visit (self, node: ClassAccess, builder: ir.IRBuilder, frame: IRFrame, types: IRTypes, prefix: List[IRType] = []) -> VisitResult: # type: ignore
+  def visit (self, node: ClassAccess, builder: ir.IRBuilder, frame: IRFrame, types: IRTypes, prefix: List[IRType] = []) -> IRValueBase: # type: ignore
 
     base: IRValue = self.visit (node.base, builder, frame, types, prefix = prefix) # type: ignore
     type: IRType = types [node.type_.name] # type: ignore
@@ -180,7 +164,7 @@ class GenerateVisitor:
       return IRMethod (base.value (builder), func._type, func._value) # type: ignore
 
   @visitor.when (Constant)
-  def visit (self, node: Constant, builder: ir.IRBuilder, frame: IRFrame, types: IRTypes, prefix: List[IRType] = []) -> VisitResult: # type: ignore
+  def visit (self, node: Constant, builder: ir.IRBuilder, frame: IRFrame, types: IRTypes, prefix: List[IRType] = []) -> IRValueBase: # type: ignore
 
     if isinstance (node.value, bool):
 
@@ -211,7 +195,7 @@ class GenerateVisitor:
       raise CodegenException (node, f'unknown constant type \'{type (node.value)}\'')
 
   @visitor.when (DestructiveAssignment)
-  def visit (self, node: DestructiveAssignment, builder: ir.IRBuilder, frame: IRFrame, types: IRTypes, prefix: List[IRType] = []) -> VisitResult: # type: ignore
+  def visit (self, node: DestructiveAssignment, builder: ir.IRBuilder, frame: IRFrame, types: IRTypes, prefix: List[IRType] = []) -> IRValueBase: # type: ignore
 
     over = self.visit (node.over, builder, frame, types, prefix = prefix) # type: ignore
     value = self.visit (node.value, builder, frame, types, prefix = prefix) # type: ignore
@@ -223,7 +207,7 @@ class GenerateVisitor:
     return value
 
   @visitor.when (FunctionDecl)
-  def visit (self, node: FunctionDecl, builder: ir.IRBuilder, frame: IRFrame, types: IRTypes, prefix: List[IRType] = []) -> VisitResult: # type: ignore
+  def visit (self, node: FunctionDecl, builder: ir.IRBuilder, frame: IRFrame, types: IRTypes, prefix: List[IRType] = []) -> IRValueBase: # type: ignore
 
     name: str = '.'.join ([ *map (lambda a: a.name, prefix), node.name ])
     first: IRFunction = frame [name] # type: ignore
@@ -260,7 +244,7 @@ class GenerateVisitor:
       implementor.ret (self.visit (node.body, implementor, descent, types, prefix = prefix).value (implementor)) # type: ignore
 
   @visitor.when (Invoke)
-  def visit (self, node: Invoke, builder: ir.IRBuilder, frame: IRFrame, types: IRTypes, prefix: List[IRType] = []) -> VisitResult: # type: ignore
+  def visit (self, node: Invoke, builder: ir.IRBuilder, frame: IRFrame, types: IRTypes, prefix: List[IRType] = []) -> IRValueBase: # type: ignore
 
     arguments = map (lambda a: self.visit (a, builder, frame, types, prefix = prefix), node.arguments) # type: ignore
     target = self.visit (node.target, builder, frame, types, prefix = prefix) # type: ignore
@@ -269,7 +253,7 @@ class GenerateVisitor:
     return IRValue (target.call (builder, [ *map (lambda a: a.value (builder), arguments) ]))
 
   @visitor.when (Let)
-  def visit (self, node: Let, builder: ir.IRBuilder, frame: IRFrame, types: IRTypes, prefix: List[IRType] = []) -> VisitResult: # type: ignore
+  def visit (self, node: Let, builder: ir.IRBuilder, frame: IRFrame, types: IRTypes, prefix: List[IRType] = []) -> IRValueBase: # type: ignore
 
     descent = IRFrame ()
 
@@ -282,7 +266,7 @@ class GenerateVisitor:
     return self.visit (node.body, builder, descent, types, prefix = prefix) # type: ignore
 
   @visitor.when (NewValue)
-  def visit (self, node: NewValue, builder: ir.IRBuilder, frame: IRFrame, types: IRTypes, prefix: List[IRType] = []) -> VisitResult: # type: ignore
+  def visit (self, node: NewValue, builder: ir.IRBuilder, frame: IRFrame, types: IRTypes, prefix: List[IRType] = []) -> IRValueBase: # type: ignore
 
     assert (isinstance (type_ := types [node.type_.name], IRType)) # type: ignore
 
@@ -297,12 +281,12 @@ class GenerateVisitor:
     return IRValue (constructor.call (builder, [ self_.address (builder), *[ v.value (builder) for v in arguments ] ]))
 
   @visitor.when (TypeDecl)
-  def visit (self, node: TypeDecl, builder: ir.IRBuilder, frame: IRFrame, types: IRTypes, prefix: List[IRType] = []) -> VisitResult: # type: ignore
+  def visit (self, node: TypeDecl, builder: ir.IRBuilder, frame: IRFrame, types: IRTypes, prefix: List[IRType] = []) -> IRValueBase: # type: ignore
 
     return self.visit (node.body, builder, frame, types, prefix = [ *prefix, types [node.name] ]) # type: ignore
 
   @visitor.when (UnaryOperator)
-  def visit (self, node: UnaryOperator, builder: ir.IRBuilder, frame: IRFrame, types: IRTypes, prefix: List[IRType] = []) -> VisitResult: # type: ignore
+  def visit (self, node: UnaryOperator, builder: ir.IRBuilder, frame: IRFrame, types: IRTypes, prefix: List[IRType] = []) -> IRValueBase: # type: ignore
 
     lhs = self.visit (node.argument, builder, frame, types, prefix = prefix) # type: ignore
 
@@ -313,7 +297,7 @@ class GenerateVisitor:
       case _: raise Exception (f'unimplemented operator \'{node.operator}\'')
 
   @visitor.when (VariableValue)
-  def visit (self, node: VariableValue, builder: ir.IRBuilder, frame: IRFrame, types: IRTypes, prefix: List[IRType] = []) -> VisitResult: # type: ignore
+  def visit (self, node: VariableValue, builder: ir.IRBuilder, frame: IRFrame, types: IRTypes, prefix: List[IRType] = []) -> IRValueBase: # type: ignore
 
     return frame [node.name]
 
