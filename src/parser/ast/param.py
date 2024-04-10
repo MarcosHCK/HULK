@@ -15,21 +15,21 @@
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
 from parser.ast.base import Value
-from parser.types import TypeRef
+from semantic.type import Type
 
 class Param (Value):
 
-  def __init__ (self, name: str, typeref: None | TypeRef, **kwargs):
+  def __init__ (self, name: str, type_: None | Type, **kw):
 
-    super ().__init__ (typeref = typeref, **kwargs)
+    super ().__init__ (**kw)
 
     self.name = name
-    self.typeref = typeref
+    self.type_ = type_
 
 class VarParam (Param):
 
-  def __init__ (self, name: str, typeref: None | TypeRef, value: Value, **kwargs):
+  def __init__ (self, name: str, type_: None | Type, value: Value, **kw):
 
-    super ().__init__ (name = name, typeref = typeref, **kwargs)
+    super ().__init__ (name = name, type_ = type_, **kw)
 
     self.value = value

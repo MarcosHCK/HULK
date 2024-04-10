@@ -17,13 +17,15 @@
 import llvmlite.binding as llvm
 import llvmlite.ir as ir
 
+llvm.initialize ()
+llvm.initialize_native_target ()
+llvm.initialize_native_asmprinter ()
+
+default_triple = llvm.get_default_triple ()
+
 def compile (module: ir.Module, level: int = 0) -> llvm.ModuleRef:
 
-  llvm.initialize ()
-  llvm.initialize_native_target ()
-  llvm.initialize_native_asmprinter ()
-
-  module.triple = llvm.get_default_triple ()
+  module.triple = default_triple
 
   (mod := llvm.parse_assembly (str (module))).verify ()
 

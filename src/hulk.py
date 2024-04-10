@@ -15,14 +15,15 @@
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
 from codegen.codegen import Codegen
-from codegen.runner import run
 from codegen.compile import compile
+from codegen.run import run
 from lexer.lexer import Lexer, Token
 from parser.parser import Parser
-from semantic.checker import SemanticChecker
+from parser.viewer import PrintVisitor
 from typing import Iterable
-from utils.viewer import PrintVisitor
 import argparse
+
+from semantic.check import SemanticCheck
 
 def ignore (source: Iterable[Token]):
 
@@ -44,6 +45,7 @@ def program ():
   parser = argparse.ArgumentParser (description = 'hulk compiler')
 
   parser.add_argument ('input', help = 'input file', nargs = '*')
+  parser.add_argument ('-O', default = 0, help = 'optimization level', metavar = 'LEVEL', type = int)
 
   args = parser.parse_args ()
 
@@ -56,17 +58,23 @@ def program ():
       ast = Parser (tokens)
 
       print ('\n'.join (PrintVisitor ().visit (ast)))
-      print ('-*-*-')
+      print ('--*-*-*-*-*--')
 
-      scope = SemanticChecker ().check (ast)
+      semantic = SemanticCheck ().check (ast)
 
       print ('\n'.join (PrintVisitor ().visit (ast)))
-      print ('-*-*-')
+      print ('--*-*-*-*-*--')
 
-      module = Codegen ().generate (ast, scope)
-      module = compile (module, 3)
+      module = Codegen ().generate (ast, semantic, name = str (file))
+
       print (module)
+      print ('--*-*-*-*-*--')
 
-      print (run (module))
+      module = compile (module, level = args.O)
+
+      print (module)
+      print ('--*-*-*-*-*--')
+
+      run (module, [ 'src/stdlib/stdlib.lib' ])
 
 program ()

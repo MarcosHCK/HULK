@@ -14,14 +14,25 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
-from parser.ast.base import Value
+from codegen.compile import default_triple
+from ctypes import CFUNCTYPE
 from typing import List
+import llvmlite.binding as llvm
 
-class Invoke (Value):
+def run (module: llvm.ModuleRef, stdlib: List[str]):
 
-  def __init__ (self, target: Value, arguments: List[Value], **kw):
+  target = llvm.Target.from_triple (default_triple)
+  machine = target.create_target_machine ()
 
-    super ().__init__ (**kw)
+  with llvm.create_mcjit_compiler (module, machine) as jit:
 
-    self.arguments = arguments
-    self.target = target
+    for file in stdlib:
+
+      jit.add_object_file (file)
+
+    jit.finalize_object ()
+
+    cfunc = jit.get_function_address ('main')
+    cfunc = CFUNCTYPE (None) (cfunc)
+
+    cfunc ()

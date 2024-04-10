@@ -19,8 +19,8 @@ from typing import List
 
 class Block (Value):
 
-  def __init__ (self, stmts: List [Value], **kwargs):
+  def __init__ (self, stmts: List [Value], **kw):
 
-    super ().__init__ (**kwargs)
+    super ().__init__ (**kw)
 
     self.stmts = stmts

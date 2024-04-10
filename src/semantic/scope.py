@@ -14,111 +14,31 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
-from collections import OrderedDict
-from parser.types import AnyType, ProtocolType, TypeRef, UnionType
-from typing import Any, Dict
+from semantic.type import Type
+from typing import Any, Dict, Iterator
 
 class Scope:
 
+  def __getitem__ (self, key: str) -> Type:
+
+    return self._store [key]
+
   def __init__ (self) -> None:
 
-    self.pending = set ()
-    self.types: Dict[str, TypeRef] = OrderedDict ()
-    self.variables: Dict[str, TypeRef] = OrderedDict ()
+    self._store: Dict[str, Type] = { }
 
-  def addc (self, name: str) -> None:
+  def __iter__ (self) -> Iterator[str]:
 
-    self.pending.add (name)
+    return self._store.__iter__ ()
 
-  def addt (self, name: str, typeref: TypeRef) -> None | TypeRef:
+  def __setitem__ (self, key: str, value: Type) -> None:
 
-    was = self.gett (name, None)
+    self._store [key] = value
 
-    self.types[name] = typeref
-    return was
+  def get (self, key: str, default: Any) -> Any | Type:
 
-  def addv (self, name: str, typeref: TypeRef) -> None | TypeRef:
+    return self._store.get (key, default)
 
-    was = self.getv (name, None)
+  def items (self):
 
-    self.variables[name] = typeref
-    return was
-
-  def clone (self):
-
-    child = Scope ()
-
-    child.pending = self.pending.copy ()
-    child.types = self.types.copy ()
-    child.variables = self.variables.copy ()
-
-    return child
-
-  def diving (self, name: str) -> bool:
-
-    return name in self.pending
-
-  def derive (self, typeref: TypeRef) -> TypeRef:
-
-    if isinstance (typeref, AnyType):
-
-      return self.union ()
-
-    elif isinstance (typeref, ProtocolType):
-
-      complaint = []
-
-      for type_ in self.types:
-
-        if typeref.__eq__ (type_):
-
-          complaint.append (type_)
-
-      return UnionType (complaint)
-
-    else:
-
-      better = self.gett (typeref.name)
-
-      if not better:
-
-        return typeref
-      else:
-
-        better = better.clone ()
-
-        better.vector = typeref.vector
-
-        return better
-
-  def diff (self, other):
-
-    o_types: Dict[str, TypeRef] = other.types
-    o_variables: Dict[str, TypeRef] = other.variables
-    scope = Scope ()
-
-    for name, type in self.types.items ():
-
-      if o_types.get (name) == None:
-
-        scope.addt (name, type)
-
-    for name, variable in self.variables.items ():
-
-      if o_variables.get (name) == None:
-
-        scope.addv (name, variable)
-
-    return scope
-
-  def gett (self, name: str, default: Any = None) -> None | TypeRef:
-
-    return self.types.get (name, default)
-
-  def getv (self, name: str, default: Any = None) -> None | TypeRef:
-
-    return self.variables.get (name, default)
-
-  def union (self):
-
-    return UnionType (list (filter (lambda e: not isinstance (e, ProtocolType), self.types.values ())))
+    return self._store.items ()

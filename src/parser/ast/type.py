@@ -15,33 +15,16 @@
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
 from parser.ast.base import AstNode
-from semantic.collector import CollectorVisitor
-from semantic.scope import Scope
-from semantic.typing import TypingVisitor
-from utils.builtins import builtin_types
-from utils.builtins import builtin_values
+from semantic.type import NamedType, VectorType
 
-class SemanticChecker:
+class TypeRef (NamedType, AstNode):
 
-  def __init__(self) -> None:
+  def __init__ (self, name: str, **kw) -> None:
 
-    scope = Scope ()
+    super ().__init__ (name, **kw)
 
-    for builtin in builtin_types:
+  @staticmethod
+  def create (name: str, vector: bool, **kw):
 
-      scope.addt (builtin.name, builtin.typeref)
-
-    for builtin in builtin_values:
-
-      scope.addv (builtin.value, builtin.typeref)
-
-    self.scope = scope
-
-  def check (self, node: AstNode):
-
-    scope = self.scope.clone ()
-
-    CollectorVisitor (scope).visit (node) # type: ignore
-    TypingVisitor (scope).visit (node) # type: ignore
-
-    return scope
+    if not vector: return TypeRef (name, **kw)
+    else: return VectorType (TypeRef (name, **kw))

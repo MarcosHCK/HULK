@@ -17,25 +17,25 @@
 from parser.ast.base import AstNode
 from parser.ast.block import Block
 from parser.ast.param import Param
-from parser.types import TypeRef
+from semantic.type import Type
 from typing import List
 
 class FunctionDecl (AstNode):
 
-  def __init__ (self, name: str, params: List[Param], typeref: None | TypeRef, body: Block, **kwargs):
+  def __init__ (self, name: str, params: List[Param], type_: None | Type, body: Block, **kw):
 
-    super ().__init__ (typeref = typeref, **kwargs)
+    super ().__init__ (**kw)
 
     self.body = body
     self.name = name
     self.params = params
-    self.typeref = typeref
+    self.type_ = type_
 
 class ProtocolDecl (AstNode):
 
-  def __init__ (self, name: str, parent: str, body: Block, **kwargs):
+  def __init__ (self, name: str, parent: str, body: Block, **kw):
 
-    super ().__init__ (**kwargs)
+    super ().__init__ (**kw)
 
     self.body = body
     self.name = name
@@ -43,9 +43,9 @@ class ProtocolDecl (AstNode):
 
 class TypeDecl (AstNode):
 
-  def __init__ (self, name: str, parent: str, body: Block, **kwargs):
+  def __init__ (self, name: str, parent: str, body: Block, **kw):
 
-    super ().__init__ (**kwargs)
+    super ().__init__ (**kw)
 
     self.body = body
     self.name = name

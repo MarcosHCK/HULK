@@ -15,17 +15,10 @@
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
 from parser.ast.base import AstNode
+from utils.exception import BasedException
 
-class CodegenException (Exception):
+class CodegenException (BasedException):
 
   def __init__ (self, base: AstNode, message: str, *args: object) -> None:
 
-    super ().__init__ (*args)
-
-    self.column = base.column
-    self.line = base.line
-    self.message = message
-
-  def __str__ (self) -> str:
-
-    return f'{self.line}: {self.column}: {self.message}'
+    super ().__init__ (base, message, *args)

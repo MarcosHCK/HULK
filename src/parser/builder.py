@@ -20,6 +20,7 @@ from parser.ast.base import AstNode
 from parser.ast.base import Value
 from parser.ast.block import Block
 from parser.ast.conditional import Conditional
+from parser.ast.constant import Constant
 from parser.ast.decl import FunctionDecl, ProtocolDecl, TypeDecl
 from parser.ast.indirection import ClassAccess
 from parser.ast.invoke import Invoke
@@ -27,10 +28,10 @@ from parser.ast.let import Let
 from parser.ast.loops import While
 from parser.ast.operator import BinaryOperator, UnaryOperator
 from parser.ast.param import Param, VarParam
+from parser.ast.type import TypeRef
 from parser.ast.value import BooleanValue, NewValue, NumberValue, StringValue, VariableValue
-from parser.types import TypeRef
 from typing import Any, List, Tuple
-from utils.builtins import BASE_TYPE, CTOR_NAME, ITERABLE_TYPE, MATH_POW
+from utils.builtin import BASE_NAME, BASE_TYPE, CTOR_NAME, ITERABLE_CURRENT, ITERABLE_NEXT, ITERABLE_TYPE, MATH_POW, SELF_NAME, STDLIB_CONCAT, STDLIB_SITOS
 
 def annot (first: Token):
 
@@ -57,7 +58,21 @@ def build_binary_operator (args: Tuple, first: Token, aat: int = 0, bat: int = 2
 
   match op:
 
-    case '^': return Invoke (VariableValue (MATH_POW.value), [ a, b ])
+    case '^': return Invoke (VariableValue (MATH_POW.name, **annot (first)), [ a, b ], **annot (first))
+
+    case '@' | '@@':
+
+      var1 = Invoke (VariableValue (STDLIB_SITOS.name, **annot (first)), [ a ], **annot (first))
+      var2 = Invoke (VariableValue (STDLIB_SITOS.name, **annot (first)), [ b ], **annot (first))
+
+      if op == '@@':
+
+        var11 = var1
+        var12 = Invoke (VariableValue (STDLIB_SITOS.name, **annot (first)), [ Constant ('') ], **annot (first))
+
+        var1 = Invoke (VariableValue (STDLIB_CONCAT.name), [ var11, var12 ], **annot (first))
+
+      return Invoke (VariableValue (STDLIB_CONCAT.name), [ var1, var2 ], **annot (first))
 
     case _: return BinaryOperator (op, a, b, **annot (first))
 
@@ -114,13 +129,12 @@ def build_for (args: Tuple, first: Token, paramat: int = 0, blockat: int = 1):
   block: Block = getat (args, blockat)
 
   name = param.name
-  typeref = param.typeref
+  type_ = param.type_
 
-  itertyperef = TypeRef (ITERABLE_TYPE.name, False, **annot (first))
-  iterparam = VarParam ('@iter', itertyperef, param.value, **annot (first))
-  iternext = Invoke (ClassAccess (VariableValue ('@iter'), 'next'), [], **annot (first))
-  itercurr = Invoke (ClassAccess (VariableValue ('@iter'), 'current'), [], **annot (first))
-  letparam = VarParam (name, typeref, itercurr, **annot (first))
+  iterparam = VarParam ('@iter', None, param.value, **annot (first))
+  iternext = Invoke (ClassAccess (VariableValue ('@iter'), ITERABLE_NEXT), [], **annot (first))
+  itercurr = Invoke (ClassAccess (VariableValue ('@iter'), ITERABLE_CURRENT), [], **annot (first))
+  letparam = VarParam (name, type_, itercurr, **annot (first))
 
   return Let ([iterparam], Block ([ While (iternext, Block ([ Let ([letparam], block) ])) ]), **annot (first))
 
@@ -170,7 +184,7 @@ def build_newvalue (args: Tuple, first: Token, typeat: int = 0, argumentsat: int
   arguments = getat (args, argumentsat)
   type_ = getvat (args, typeat)
 
-  return NewValue (TypeRef (type_, False), arguments, **annot (first))
+  return NewValue (TypeRef (type_), arguments, **annot (first))
 
 def build_number_value (args: Tuple, first: Token, valueat: int = 0):
 
@@ -209,8 +223,8 @@ def build_typedecl (args: Tuple, first: Token, nameat: int = 0, paramsat: int = 
 
   deb = annot (getat (args, parentctorat) or first)
 
-  ctorb = Block ([ Invoke (ClassAccess (VariableValue ('base'), CTOR_NAME), parentctor or [ ], **deb), VariableValue ('self') ])
-  ctor = FunctionDecl (CTOR_NAME, params or [ ], TypeRef (name, False), ctorb)
+  ctorb = Block ([ Invoke (ClassAccess (VariableValue (BASE_NAME), CTOR_NAME), parentctor or [ ], **deb), VariableValue (SELF_NAME) ])
+  ctor = FunctionDecl (CTOR_NAME, params or [ ], TypeRef (name), ctorb)
 
   body = Block ([ ctor, *body.stmts ]) # type: ignore
   decl = TypeDecl (name, parent, body, **annot (first))
@@ -219,7 +233,7 @@ def build_typedecl (args: Tuple, first: Token, nameat: int = 0, paramsat: int = 
 
 def build_typeref (args: Tuple, first: Token, nameat: int = 0, vector: bool = False):
 
-  return TypeRef (getvat (args, nameat), vector, **annot (first))
+  return TypeRef.create (getvat (args, nameat), vector, **annot (first))
 
 def build_unary_operator (args: Tuple, first: Token, opat = 0, aat: int = 1):
 
@@ -230,7 +244,7 @@ def build_varparam (args: Tuple, first: Token, paramat: int = 0, valueat: int = 
   param: Param = getat (args, paramat)
   value: Value = getat (args, valueat)
 
-  return VarParam (param.name, param.typeref, value, **annot (first))
+  return VarParam (param.name, param.type_, value, **annot (first))
 
 def build_var_value (args: Tuple, first: Token, valueat: int = 0):
 

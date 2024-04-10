@@ -14,14 +14,17 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
-from parser.ast.base import Value
-from typing import List
 
-class Invoke (Value):
+GCC = clang-14
+OBJCOPY = llvm-objcopy-14
 
-  def __init__ (self, target: Value, arguments: List[Value], **kw):
+STDLIB_SOURCE = stdlib.c
+SYMBOL_LIST = symbols.list
 
-    super ().__init__ (**kw)
+%.o: %.c
+	$(GCC) -o $@ -c $<
 
-    self.arguments = arguments
-    self.target = target
+%.lib: %.o
+	$(OBJCOPY) --redefine-syms $(SYMBOL_LIST) $< $@
+
+all: stdlib.lib

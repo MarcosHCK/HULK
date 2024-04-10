@@ -61,6 +61,11 @@ type OtherObject3 (t: Number[])
   var1: Number = t;
 }
 
+type OtherObject3 (t: Number[])
+{
+  var3: Number = t;
+}
+
 protocol Empty
 {
 }

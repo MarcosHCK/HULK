@@ -16,46 +16,46 @@
 #
 from parser.ast.base import Value
 from parser.ast.constant import Constant
-from parser.types import TypeRef
+from semantic.type import Type
 from typing import List
 
 class BooleanValue (Constant):
 
-  def __init__ (self, value: str, **kwargs):
+  def __init__ (self, value: str, **kw):
 
-    super ().__init__ (value == 'true', **kwargs)
+    super ().__init__ (value == 'true', **kw)
 
 class DefaultValue (Constant):
 
-  def __init__ (self, **kwargs):
+  def __init__ (self, **kw):
 
-    super ().__init__ (None, **kwargs)
+    super ().__init__ (None, **kw)
 
 class NewValue (Value):
 
-  def __init__ (self, typeref: TypeRef, arguments: List[Value], **kwargs):
+  def __init__ (self, type_: Type, arguments: List[Value], **kw):
 
-    super ().__init__ (**kwargs)
+    super ().__init__ (**kw)
 
     self.arguments = arguments
-    self.typeref = typeref
+    self.type_ = type_
 
 class NumberValue (Constant):
 
-  def __init__ (self, value: str, **kwargs):
+  def __init__ (self, value: str, **kw):
 
-    super ().__init__ (float (value), **kwargs)
+    super ().__init__ (float (value), **kw)
 
 class StringValue (Constant):
 
-  def __init__ (self, value: str, **kwargs):
+  def __init__ (self, value: str, **kw):
 
-    super ().__init__ (value [1:-1], **kwargs)
+    super ().__init__ (value [1:-1], **kw)
 
 class VariableValue (Value):
 
-  def __init__ (self, name: str, **kwargs):
+  def __init__ (self, name: str, **kw):
 
-    super ().__init__ (**kwargs)
+    super ().__init__ (**kw)
 
     self.name = name

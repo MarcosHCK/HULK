@@ -14,10 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
+from collections import OrderedDict
+from functools import reduce
 from parser.ast.assignment import DestructiveAssignment
 from parser.ast.block import Block
 from parser.ast.conditional import Conditional
-from parser.ast.constant import Constant
 from parser.ast.decl import FunctionDecl, ProtocolDecl, TypeDecl
 from parser.ast.indirection import ClassAccess
 from parser.ast.invoke import Invoke
@@ -25,266 +26,428 @@ from parser.ast.let import Let
 from parser.ast.loops import While
 from parser.ast.operator import BinaryOperator, UnaryOperator
 from parser.ast.param import Param, VarParam
-from parser.ast.value import NewValue, VariableValue
-from parser.types import AnyType, CompositeType, FunctionType, ProtocolType, TypeRef
-from parser.types import compare_types
+from parser.ast.value import Constant, NewValue, VariableValue
 from semantic.exception import SemanticException
 from semantic.scope import Scope
-from utils.builtins import BOOLEAN_TYPE
-from utils.builtins import NUMBER_TYPE
-from utils.builtins import STRING_TYPE
+from semantic.type import AnyType, CompositeType, FunctionType, NamedType, ProtocolType, Type, UnionType, VectorType
+from semantic.type import Ref as TypeRef
+from semantic.types import Types
+from typing import List, Sequence, Tuple
+from utils.builtin import BASE_NAME, BASE_VARIABLE, BOOLEAN_TYPE, CTOR_NAME, NUMBER_TYPE, PRINTABLE_TYPE, SELF_NAME, SELF_VARIABLE, STRING_TYPE
 import utils.visitor as visitor
+
+TypeReport = Tuple[int, Type]
 
 class TypingVisitor:
 
-  def __init__ (self, scope: Scope, compose: None | CompositeType = None) -> None:
+  @staticmethod
+  def derivate (of: Type, types: Types, hints: List[Type] = []) -> TypeReport:
 
-    self.compose = compose
-    self.scope = scope
+    actually = of
+
+    if isinstance (of, AnyType | UnionType) and len (hints) > 0:
+
+      return (0 if Type.compare_types (of, actually, True) else 1, reduce (Type.merge, hints))
+    elif isinstance (of, AnyType):
+
+      return (1, reduce (Type.merge, filter (lambda t: not isinstance (t, ProtocolType), [ type_ for _, type_ in types.items () ])))
+
+    return (0, of)
+
+  @staticmethod
+  def describe (type_: Type) -> str:
+
+    if isinstance (type_, AnyType):
+
+      return 'any'
+    elif isinstance (type_, NamedType):
+
+      return type_.name
+    elif isinstance (type_, VectorType):
+
+      return f'{TypingVisitor.describe (type_.type_)}'
+    elif isinstance (type_, UnionType):
+
+      return f'union[{",".join (map (lambda a: TypingVisitor.describe (a), type_.types))}]'
+    else:
+
+      return type (type_).__name__
+
+  @staticmethod
+  def merge (type_: Type, already: int, types: Types, hints: List[Type] = [ ]):
+
+    done, got = TypingVisitor.derivate (type_, types = types, hints = hints)
+    return (done + already, got)
 
   @visitor.on ('node')
-  def visit (self, node):
+  def visit (self, node, scope: Scope, types: Types, prefix: List[CompositeType] = []) -> TypeReport: # type: ignore
 
-    pass
+    raise Exception ('falled through')
 
   @visitor.when (BinaryOperator)
-  def visit (self, node: BinaryOperator) -> TypeRef:
+  def visit (self, node: BinaryOperator, scope: Scope, types: Types, prefix: List[CompositeType] = []) -> TypeReport: # type: ignore
 
-    value: TypeRef
+    done = 0
+    type_: Type
 
     match node.operator:
 
-      case 'as': value = node.argument2 # type: ignore
-      case 'is': value = BOOLEAN_TYPE.typeref
+      case 'as' | 'is':
 
-      case '@' | '@@': value = STRING_TYPE.typeref
+        if not (isinstance (node.argument2, Type)):
+
+          raise SemanticException (node.argument2, 'expecting a type')
+
+        match node.operator:
+
+          case 'as':
+
+            last, arg1 = self.visit (node.argument, scope, types, prefix = prefix) # type: ignore
+
+            arg2 = node.argument2 if not isinstance (node.argument2, TypeRef) else types [node.argument2.name]
+            done = last + done
+
+            if not isinstance (arg1, CompositeType):
+
+              raise SemanticException (node.argument, f'can not cast a non-object type \'{TypingVisitor.describe (arg1)}\'')
+
+            if not isinstance (arg2, CompositeType):
+
+              raise SemanticException (node.argument, f'can not cast an object to a non-object type \'{TypingVisitor.describe (arg2)}\'')
+
+            type_ = arg2
+
+          case 'is':
+
+            arg2 = node.argument2 if not isinstance (node.argument2, TypeRef) else types [node.argument2.name]
+            type_ = BOOLEAN_TYPE
+
+            if not isinstance (arg2, CompositeType):
+
+              raise SemanticException (node.argument, f'can not cast an object to a non-object type \'{TypingVisitor.describe (arg2)}\'')
 
       case _:
 
-        arg1 = self.visit (node.argument) # type: ignore
-        arg2 = self.visit (node.argument2) # type: ignore
+        last1, arg1 = self.visit (node.argument, scope, types, prefix = prefix) # type: ignore
+        last2, arg2 = self.visit (node.argument2, scope, types, prefix = prefix) # type: ignore
+        want: Sequence[NamedType]
 
-        if not compare_types (arg1, arg2):
+        match node.operator:
 
-          raise SemanticException (node, f'incompatible types \'{arg1}\' and \'{arg2}\' for \'{node.operator}\' operator')
+          case '==' | '!=':
 
-        else:
+            for against in (want := [ NUMBER_TYPE, (type_ := BOOLEAN_TYPE) ]):
 
-          match node.operator:
+              if not (Type.compare_types (arg1, against) or not Type.compare_types (arg2, against)):
 
-            case '==' | '!=' | '>=' | '<=' | '>' | '<': value = BOOLEAN_TYPE.typeref
-            case _: value = (arg2 if isinstance (arg1, AnyType) else arg1)
+                arg1 = TypingVisitor.describe (arg1)
+                arg2 = TypingVisitor.describe (arg2)
 
-    return value
+                raise SemanticException (node, f'incompatible types \'{arg1}\' and \'{arg2}\' for \'{node.operator}\' operator')
+
+          case '+' | '-' | '*' | '/' | '%' | '<' | '>' | '<=' | '>=':
+
+            if not (Type.compare_types (arg1, NUMBER_TYPE) and Type.compare_types (arg2, NUMBER_TYPE)):
+
+              arg1 = TypingVisitor.describe (arg1)
+              arg2 = TypingVisitor.describe (arg2)
+
+              raise SemanticException (node, f'incompatible types \'{arg1}\' and \'{arg2}\' for \'{node.operator}\' operator')
+
+            match node.operator:
+
+              case '<' | '>' | '<=' | '>=': type_ = BOOLEAN_TYPE
+              case _: type_ = NUMBER_TYPE
+
+          case _:
+
+            raise SemanticException (node, f'unknown binary operator \'{node.operator}\'')
+
+        done = done + last1 + last2
+
+    return (0, type_)
 
   @visitor.when (Block)
-  def visit (self, node: Block) -> TypeRef:
+  def visit (self, node: Block, scope: Scope, types: Types, prefix: List[CompositeType] = []) -> TypeReport: # type: ignore
 
-    value: TypeRef
+    done = 0
+    type_: Type
 
     for stmt in node.stmts:
 
-      value = self.visit (stmt) # type: ignore
+      last, type_ = self.visit (stmt, scope, types, prefix = prefix) # type: ignore
+      done = done + last
 
-    return value
+    return (done, type_)
 
   @visitor.when (ClassAccess)
-  def visit (self, node: ClassAccess) -> TypeRef:
+  def visit (self, node: ClassAccess, scope: Scope, types: Types, prefix: List[CompositeType] = []) -> TypeReport: # type: ignore
 
-    base = self.visit (node.base) # type: ignore
+    done, type_ = self.visit (node.base, scope, types, prefix = prefix) # type: ignore
 
-    if not isinstance (base, CompositeType):
+    if not isinstance (type_, CompositeType):
 
-      raise SemanticException (node, f'trying to access a non-composite type \'{base}\'')
+      raise SemanticException (node, f'trying to index a \'{TypingVisitor.describe (type_)}\' type')
 
     else:
 
-      member = base.get_member (node.field)
+      if (member := type_.get (node.field, None)) == None:
 
-      if not member:
-
-        raise SemanticException (node, f'trying to access a no existing field \'{node.field}\' in type \'{base}\'')
+        raise SemanticException (node, f'trying to access a no existing field \'{node.field}\' in \'{TypingVisitor.describe (type_)}\'')
 
       else:
 
-        node.typeref = base
-        return member
+        node.type_ = type_
+        return (done, member)
 
   @visitor.when (Conditional)
-  def visit (self, node: Conditional) -> TypeRef:
+  def visit (self, node: Conditional, scope: Scope, types: Types, prefix: List[CompositeType] = []) -> TypeReport: # type: ignore
 
-    if (self.visit (node.condition) != BOOLEAN_TYPE.typeref): # type: ignore
+    done, type_ = self.visit (node.condition, scope, types, prefix = prefix) # type: ignore
 
-      raise SemanticException (node.condition, f'conditional value is not a \'{BOOLEAN_TYPE.typeref}\' value')
+    if type_ != BOOLEAN_TYPE:
 
-    direct = self.visit (node.direct) # type: ignore
+      raise SemanticException (node.condition, f'conditional value is not a \'{TypingVisitor.describe (BOOLEAN_TYPE)}\' value')
 
-    if not isinstance (node, While):
+    else:
 
-      reverse = self.visit (node.reverse) # type: ignore
+      last, direct = self.visit (node.direct, scope, types, prefix = prefix) # type: ignore
+      done = last + done
 
-      if not compare_types (direct, reverse):
+      if not isinstance (node, While):
 
-        raise SemanticException (node.reverse, f'branch value type \'{reverse}\' differs from conditional type \'{direct}\'')
+        last, reverse = self.visit (node.reverse, scope, types, prefix = prefix) # type: ignore
+        done = last + done
 
-    return direct
+        if not Type.compare_types (direct, reverse):
+
+          raise SemanticException (node.reverse, f'branch value type \'{reverse}\' differs from conditional type \'{direct}\'')
+
+    return (done, direct)
 
   @visitor.when (Constant)
-  def visit (self, node: Constant) -> TypeRef:
+  def visit (self, node: Constant, scope: Scope, types: Types, prefix: List[CompositeType] = []) -> TypeReport: # type: ignore
 
-    value: TypeRef
-
-    if isinstance (node.value, bool): value = BOOLEAN_TYPE.typeref
-    elif isinstance (node.value, float): value = NUMBER_TYPE.typeref
-    elif isinstance (node.value, str): value = STRING_TYPE.typeref
+    if isinstance (node.value, bool): type_ = BOOLEAN_TYPE
+    elif isinstance (node.value, float): type_ = NUMBER_TYPE
+    elif isinstance (node.value, str): type_ = STRING_TYPE
     else: raise Exception (f'can not extract type info from {type (node.value)}')
 
-    return value
+    return (0, type_)
 
   @visitor.when (DestructiveAssignment)
-  def visit (self, node: DestructiveAssignment) -> TypeRef:
+  def visit (self, node: DestructiveAssignment, scope: Scope, types: Types, prefix: List[CompositeType] = []) -> TypeReport: # type: ignore
 
-    over = self.visit (node.over) # type: ignore
-    value = self.visit (node.value) # type: ignore
+    last1, over = self.visit (node.over, scope, types, prefix = prefix) # type: ignore
+    last2, value = self.visit (node.value, scope, types, prefix = prefix) # type: ignore
+    done = last1 + last2
 
-    if not compare_types (over, value): # type: ignore
+    if not Type.compare_types (over, value): # type: ignore
 
-      raise SemanticException (node.over, f'can not assign a \'{value}\' value to a \'{self.visit (node.over)}\' variable') # type: ignore
+      raise SemanticException (node.over, f'can not assign a \'{TypingVisitor.describe (value)}\' value to a \'{TypingVisitor.describe (over)}\' variable') # type: ignore
 
-    return over if isinstance (value, AnyType) else value
+    return TypingVisitor.merge (over, done, types, [ value ])
 
   @visitor.when (FunctionDecl)
-  def visit (self, node: FunctionDecl) -> TypeRef:
+  def visit (self, node: FunctionDecl, scope: Scope, types: Types, prefix: List[CompositeType] = []) -> TypeReport: # type: ignore
 
-    name = node.name if not self.compose else f'{self.compose.name}.{node.name}'
+    done = 0
+    name = '.'.join ([ *map (lambda a: a.name, prefix), node.name ])
 
-    params = []
-    scope: Scope = self.scope.clone ()
-    value: FunctionType = self.scope.getv (name) # type: ignore
+    descent = Scope ()
+    params = OrderedDict ()
 
-    if self.compose != None:
+    value: FunctionType = scope [name] # type: ignore
 
-      scope.addv ('self', self.compose)
+    if len (prefix) > 0:
 
-      if self.compose.parent != None:
+      descent [SELF_NAME if node.name == CTOR_NAME else SELF_VARIABLE] = (overlord := prefix [-1])
 
-        scope.addv ('base', self.compose.parent)
+      if overlord.parent:
 
-    for param in value.params:
+        descent [BASE_NAME if node.name == CTOR_NAME else BASE_VARIABLE] = overlord.parent
 
-      params.append (scope.derive (param))
+    for name, type_ in scope.items ():
 
-    for i, param in enumerate (params):
+      descent [name] = type_
 
-      node.params [i].typeref = params [i]
-      value.params [i] = params [i]
+    for name, param in value.params.items ():
 
-      scope.addv (node.params [i].name, params [i])
+      last, type_ = TypingVisitor.derivate (param, types, [])
+      done = last + done
 
-    ref = scope.derive (value.typeref)
+      params [name] = type_
 
-    body = TypingVisitor (scope).visit (node.body) or AnyType () # type: ignore
+    for i, (name, param) in enumerate (zip (value.params.keys (), params)):
 
-    if not compare_types (body, value.typeref):
+      type_ = params [name]
 
-      raise SemanticException (node, f'can not return a \'{body}\' value from a function with \'{value.typeref}\' return type')
+      descent [name] = type_
+      node.params [i].type_ = type_
+      value.params [name] = type_
 
-    ref = value.typeref if isinstance (body, AnyType) else body
+    value.type_ = value.type_ or AnyType ()
 
-    value.typeref = ref
-    node.typeref = ref
+    if node.body != None:
 
-    return value
+      last, type_ = self.visit (node.body, descent, types, prefix = prefix) # type: ignore
+      done, type_ = TypingVisitor.merge (value.type_, done + last, types, [ type_ ])
+
+      if not Type.compare_types (value.type_, type_):
+
+        expect = TypingVisitor.describe (type_)
+        got = TypingVisitor.describe (value.type_)
+
+        raise SemanticException (node, f'can not return a \'{expect}\' value from a function with \'{got}\' return type')
+
+    value.type_ = type_
+    node.type_ = type_
+
+    return (done, value)
 
   @visitor.when (Invoke)
-  def visit (self, node: Invoke) -> TypeRef:
+  def visit (self, node: Invoke, scope: Scope, types: Types, prefix: List[CompositeType] = []) -> TypeReport: # type: ignore
 
-    arguments = list (map (lambda a: self.visit (a), node.arguments)) # type: ignore
-    target = self.visit (node.target) # type: ignore
+    descent: List[Type] = []
+    done: int = 0
+
+    for other in [ node.target, *node.arguments ]:
+
+      last, down = self.visit (other, scope, types, prefix = prefix) # type: ignore
+
+      descent.append (down)
+      done = done + last
+
+    arguments = descent [1:]
+    target = descent [0]
 
     if not isinstance (target, FunctionType):
 
-      raise SemanticException (node, f'attempt to call a \'{target}\' value')
+      raise SemanticException (node, f'attempt to call a \'{TypingVisitor.describe (target)}\' value')
 
-    if len (arguments) != len (target.params):
+    elif len (arguments) != len (target.params):
 
-      raise SemanticException (node, f'{target.name} function requires {len (target.params)}, got {len (arguments)}')
+      raise SemanticException (node, f'{target.name} function have {len (target.params)} arguments, got {len (arguments)}')
+    
+    elif any ([ not Type.compare_types (a, b) for a, b in zip (arguments, target.params.values ()) ]):
 
-    elif any ([ not compare_types (a, b) for a, b in zip (arguments, target.params) ]):
+      for typea, typeb in zip (arguments, target.params.values ()):
 
-      for typea, typeb in zip (arguments, target.params):
+        if not Type.compare_types (typea, typeb):
 
-        if not compare_types (typea, typeb):
-
-          raise SemanticException (node, f'can not convert a \'{typea}\' value to a \'{typeb}\' type')
+          raise SemanticException (node, f'can not convert a \'{TypingVisitor.describe (typea)}\' value to a \'{TypingVisitor.describe (typeb)}\' type')
 
       raise Exception ('invalid argument types')
 
-    return target.typeref
+    return (done, target.type_)
 
   @visitor.when (Let)
-  def visit (self, node: Let) -> TypeRef:
+  def visit (self, node: Let, scope: Scope, types: Types, prefix: List[CompositeType] = []) -> TypeReport: # type: ignore
 
-    scope = self.scope.clone ()
-    typing = TypingVisitor (scope)
+    descent = Scope ()
+    done = 0
+
+    for name, variable in scope.items ():
+
+      descent [name] = variable
 
     for param in node.params:
 
-      scope.addv (param.name, typing.visit (param)) # type: ignore
+      last, descent [param.name] = self.visit (param, descent, types, prefix = prefix) # type: ignore
+      done = last + done
 
-    return typing.visit (node.body) # type: ignore
+    if True:
+
+      last, type_ = self.visit (node.body, descent, types, prefix = prefix) # type: ignore
+      done = last + done
+
+    return (done, type_)
 
   @visitor.when (NewValue)
-  def visit (self, node: NewValue) -> TypeRef:
+  def visit (self, node: NewValue, scope: Scope, types: Types, prefix: List[CompositeType] = []) -> TypeReport: # type: ignore
 
-    value = self.scope.derive (node.typeref) # type: ignore
+    assert (isinstance (node.type_, NamedType))
 
-    if not value:
+    if (type_ := types.get (node.type_.name, None)) == None:
 
-      raise SemanticException (node, f'unknown type \'{node.typeref}\'')
+      raise SemanticException (node, f'unknown type \'{TypingVisitor.describe (node.type_)}\'')
 
-    elif not compare_types (value, node.typeref):
+    elif isinstance (type_, ProtocolType):
 
-      raise SemanticException (node, f'composite types array can not be instanciate')
+      raise SemanticException (node, f'can not instanciate a protocol')
 
-    elif isinstance (value, ProtocolType):
+    elif isinstance (type_, ProtocolType):
 
-      raise SemanticException (node, f'can not instanciate a \'{value}\' protocol')
+      raise SemanticException (node, f'can not instanciate a \'{TypingVisitor.describe (node.type_)}\' type')
 
-    node.typeref = value
+    node.type_ = type_
 
-    return value
+    arguments: List[Type] = []
+    ctor: FunctionType = scope ['.'.join ([ type_.name, CTOR_NAME ])] # type: ignore
+    done: int = 0
+
+    for other in node.arguments:
+
+      last, down = self.visit (other, scope, types, prefix = prefix) # type: ignore
+
+      arguments.append (down)
+      done = done + last
+
+    if any ([ not Type.compare_types (a, b) for a, b in zip (arguments, ctor.params.values ()) ]):
+
+      for typea, typeb in zip (arguments, ctor.params.values ()):
+
+        if not Type.compare_types (typea, typeb):
+
+          raise SemanticException (node, f'can not convert a \'{TypingVisitor.describe (typea)}\' value to a \'{TypingVisitor.describe (typeb)}\' type')
+
+      raise Exception ('invalid argument types')
+
+    return (0, type_)
 
   @visitor.when (Param)
-  def visit (self, node: Param) -> None | TypeRef:
+  def visit (self, node: Param, scope: Scope, types: Types, prefix: List[CompositeType] = []) -> TypeReport: # type: ignore
 
-    node.typeref = self.scope.getv (node.name)
-    node.typeref = self.scope.derive (node.typeref or AnyType ())
+    if len (prefix) == 0:
+
+      type_ = node.type_ or AnyType ()
+    else:
+
+      type_ = prefix [-1].attributes [node.name]
+
+    done, type_ = TypingVisitor.merge (type_, 0, types, [])
 
     if isinstance (node, VarParam):
 
-      value = self.visit (node.value) # type: ignore
+      last, value = self.visit (node.value, scope, types, prefix = prefix) # type: ignore
+      done = last + done
 
-      if not compare_types (value, node.typeref):
+      if not Type.compare_types (type_, value):
 
-        raise SemanticException (node, f'can not assign a \'{value}\' value to a \'{node.typeref}\' variable')
+        raise SemanticException (node, f'can not assign a \'{TypingVisitor.describe (value)}\' value to a \'{TypingVisitor.describe (type_)}\' variable')
 
-      node.typeref = value if not isinstance (value, AnyType) else node.typeref
+      done, type_ = TypingVisitor.merge (type_, done, types, [ value ])
 
-    return node.typeref
+    if len (prefix) > 0:
 
-  @visitor.when (TypeDecl)
-  def visit (self, node: TypeDecl) -> TypeRef:
+      prefix[-1].attributes [node.name] = type_
 
-    scope = self.scope.clone ()
-    value: CompositeType = self.scope.gett (node.name) # type: ignore
-    parent: CompositeType = self.scope.gett (node.parent) # type: ignore
+    node.type_ = type_
 
-    if not parent:
+    return (done, type_)
+
+  @visitor.when (ProtocolDecl | TypeDecl)
+  def visit (self, node: ProtocolDecl | TypeDecl, scope: Scope, types: Types, prefix: List[CompositeType] = []) -> TypeReport: # type: ignore
+
+    descent = Scope ()
+    parent: CompositeType = types.get (node.parent, None) # type: ignore
+    value: CompositeType = types.get (node.name, None) # type: ignore
+
+    if not isinstance (node, ProtocolDecl) and not parent:
 
       raise SemanticException (node, f'unknown type \'{node.parent}\'')
 
-    elif isinstance (node, ProtocolDecl) and not isinstance (parent, ProtocolType):
+    elif isinstance (node, ProtocolDecl) and node.parent and not isinstance (parent, ProtocolType):
 
       raise SemanticException (node, f'protocol can not extend a \'{parent}\' type')
 
@@ -298,38 +461,42 @@ class TypingVisitor:
 
     value.parent = parent
 
-    for name, member in value.members.items ():
+    for name, type_ in scope.items ():
 
-      scope.addv (name, member)
+      descent [name] = type_
 
-    TypingVisitor (scope, compose = value).visit (node.body) # type: ignore
+    for name, type_ in [ *value.attributes.items (), *value.methods.items () ]:
 
-    return value
+      descent [name] = type_
+
+    return self.visit (node.body, scope, types, prefix = [ *prefix, value ]) # type: ignore
 
   @visitor.when (UnaryOperator)
-  def visit (self, node: UnaryOperator) -> TypeRef:
+  def visit (self, node: UnaryOperator, scope: Scope, types: Types, prefix: List[CompositeType] = []) -> TypeReport: # type: ignore
 
     match node.operator:
 
       case '!':
 
-        if self.visit (node.argument) != BOOLEAN_TYPE.typeref: # type: ignore
+        done, type_ = self.visit (node.argument, scope, types, prefix = prefix) # type: ignore
 
-          raise SemanticException (node, f'invalid \'{self.visit (node.operator)}\' for \'{node.operator}\' operator') # type: ignore
+        if type_ != BOOLEAN_TYPE:
 
-        value = BOOLEAN_TYPE.typeref
+          raise SemanticException (node, f'can not transform a \'{TypingVisitor.describe (type_)}\' to {TypingVisitor.describe (BOOLEAN_TYPE)}') # type: ignore
 
-      case _: value = self.visit (node.argument) # type: ignore
+      case _:
 
-    return value
+        raise SemanticException (node, f'unknown unary operator \'{node.operator}\'')
+
+    return (done, type_)
 
   @visitor.when (VariableValue)
-  def visit (self, node: VariableValue) -> TypeRef:
+  def visit (self, node: VariableValue, scope: Scope, types: Types, prefix: List[CompositeType] = []) -> TypeReport: # type: ignore
 
-    value = self.scope.getv (node.name)
+    name = node.name
 
-    if not value:
+    if not (type_ := scope.get (name, None)):
 
       raise SemanticException (node, f'unknown variable \'{node.name}\'')
 
-    return self.scope.derive (value or AnyType ())
+    return (0, type_)

@@ -17,7 +17,7 @@
 
 class AstNode:
 
-  def __init__ (self, line: int = 0, column: int = 0, **kwargs):
+  def __init__ (self, line: int = 0, column: int = 0, **kw):
 
     super ().__init__ ()
 
@@ -26,6 +26,6 @@ class AstNode:
 
 class Value (AstNode):
 
-  def __init__ (self, **kwargs):
+  def __init__ (self, **kw):
 
-    super ().__init__ (**kwargs)
+    super ().__init__ (**kw)

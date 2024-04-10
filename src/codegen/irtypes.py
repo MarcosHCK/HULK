@@ -14,14 +14,34 @@
 # You should have received a copy of the GNU General Public License
 # along with HULK.  If not, see <http://www.gnu.org/licenses/>.
 #
-from parser.ast.base import Value
-from typing import List
+from typing import Any, Dict, Iterator, List
+import llvmlite.ir as ir
 
-class Invoke (Value):
+TypeDict = Dict[str, ir.Type]
+LinkDict = Dict[str, List[str]]
 
-  def __init__ (self, target: Value, arguments: List[Value], **kw):
+class IRTypes:
 
-    super ().__init__ (**kw)
+  def __getitem__ (self, key: str) -> ir.Type:
 
-    self.arguments = arguments
-    self.target = target
+    return self._store [key]
+
+  def __init__ (self) -> None:
+
+    self._store: TypeDict = { }
+
+  def __iter__ (self) -> Iterator[str]:
+
+    return self._store.__iter__ ()
+
+  def __setitem__ (self, key: str, value: ir.Type) -> None:
+
+    self._store [key] = value
+
+  def get (self, key: str, default: Any) -> None | ir.Type:
+
+    return self._store.get (key, default)
+
+  def items (self):
+
+    return self._store.items ()
